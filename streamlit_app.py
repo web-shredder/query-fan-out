@@ -389,11 +389,11 @@ def get_ai_response(prompt, provider, model):
 def create_query_prompt(query, mode, personalization_data=None):
     """Create prompt for query generation"""
     mode_configs = {
-        "AI Overview (Simple)": {"min": 12, "max": 20},
-        "AI Mode (Complex)": {"min": 20, "max": 35},
-        "Research Mode (Deep)": {"min": 35, "max": 50},
-        "Comparative Analysis": {"min": 15, "max": 25},
-        "Multi-Perspective": {"min": 25, "max": 40}
+        "Simple": {"min": 12, "max": 20},
+        "Complex": {"min": 20, "max": 50},
+        "Deep": {"min": 50, "max": 100},
+        "Comparative Analysis": {"min": 20, "max": 50},
+        "Multi-Perspective": {"min": 30, "max": 70}
     }
     
     config = mode_configs.get(mode, mode_configs["AI Mode (Complex)"])
