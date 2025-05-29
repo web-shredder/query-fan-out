@@ -44,7 +44,7 @@ except ImportError:
     REPORTLAB_AVAILABLE = False
 
 # App config
-st.set_page_config(page_title="Qforia 2.0 - Now with Content Analysis", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Qforia Pro", layout="wide", initial_sidebar_state="expanded")
 
 # Custom CSS
 st.markdown("""
@@ -78,8 +78,8 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🔥 Qforia 2.0: LLM Query Intelligence System")
-st.markdown("*Powered by Gemini, OpenAI, and Claude with Advanced Analytics*")
+st.title("HeLLiuM 🐍")
+st.markdown("*Multiplied intelligence. LLM Query Fan Out Simulator. Powered by Gemini, OpenAI, and Claude with Advanced Analytics*")
 
 # Initialize session state
 if 'query_history' not in st.session_state:
@@ -837,7 +837,7 @@ def export_to_csv(queries):
     return df.to_csv(index=False)
 
 # Main UI
-tabs = st.tabs(["🚀 Generate", "📊 Results", "🔍 Content Analysis", "🗺️ Visualization", "📚 History"])
+tabs = st.tabs(["🚀 Generate", "📊 Results", "🔍 Content Analysis", "🗺️ Visualization", "📚 History", "📖 Resources"])
 
 with tabs[0]:  # Generate Tab
     col1, col2 = st.columns([3, 1])
@@ -1134,11 +1134,238 @@ with tabs[4]:  # History Tab
     else:
         st.info("No history yet. Start generating queries!")
 
+with tabs[5]:  # Resources Tab
+    st.markdown("### 📖 Resources & Documentation")
+    
+    # Quick Start Guide
+    with st.expander("🚀 Quick Start Guide", expanded=True):
+        st.markdown("""
+        ### Getting Started with Qforia Pro
+        
+        **1. Set Up Your API Key**
+        - Choose your AI provider (Gemini, OpenAI, or Claude)
+        - Enter your API key in the sidebar
+        - Select your preferred model
+        
+        **2. Configure Your Query**
+        - Enter your main search query
+        - Choose a search mode based on your needs:
+          - **AI Overview**: 12-20 queries for quick exploration
+          - **AI Mode (Complex)**: 20-35 queries for comprehensive coverage
+          - **Research Mode**: 35-50 queries for deep research
+          - **Comparative Analysis**: Focus on comparisons
+          - **Multi-Perspective**: Various viewpoints
+        
+        **3. Generate Queries**
+        - Click "Generate Queries" to create variations
+        - Review results in the Results tab
+        - Filter by type, priority, or confidence
+        
+        **4. Analyze Content (Optional)**
+        - Paste your content in the Content Analysis tab
+        - See how well your content matches the queries
+        - Export analysis results
+        
+        **5. Visualize & Export**
+        - View hierarchical visualizations
+        - Export as CSV, PDF, or JSON
+        - Save visualizations as images
+        """)
+    
+    # About the Technology
+    with st.expander("🧠 Understanding the Technology"):
+        st.markdown("""
+        ### The Google Patent Explained
+        
+        Qforia Pro is inspired by Google's "Search with Stateful Chat" patent, which describes how modern search engines generate multiple query variations to better understand user intent.
+        
+        **Key Concepts:**
+        
+        📍 **Query Fan-Out**: Instead of processing just one query, the system generates many related queries to explore different aspects of your search intent.
+        
+        🔄 **Query Types**:
+        - **Reformulations**: Different ways to phrase the same question
+        - **Related Queries**: Adjacent topics you might be interested in
+        - **Implicit Queries**: Hidden questions within your main query
+        - **Comparative Queries**: Comparisons you might want to make
+        - **Entity Expansions**: Deep dives on specific things mentioned
+        - **Personalized Queries**: Variations based on context
+        
+        🎯 **Why This Matters**:
+        - Better content coverage for SEO
+        - Understanding user search behavior
+        - Creating comprehensive content strategies
+        - Identifying content gaps
+        - Improving search relevance
+        
+        💡 **Real-World Application**: When you search for "best electric SUV", Google might internally generate queries like:
+        - "electric SUV comparison 2024"
+        - "Tesla Model Y vs competitors"
+        - "electric SUV range anxiety"
+        - "cost of owning electric SUV"
+        - And dozens more...
+        
+        This tool gives you access to that same powerful capability!
+        """)
+    
+    # Advanced Features
+    with st.expander("🔬 Advanced Features & Tips"):
+        st.markdown("""
+        ### Pro Tips for Power Users
+        
+        **🎨 Visualization Features**
+        - Use Treemap view for hierarchical analysis
+        - Switch to Sunburst for radial exploration
+        - Colors indicate confidence or match scores
+        - Click sections to zoom in (Sunburst)
+        
+        **📊 Content Analysis**
+        - Match scores show keyword overlap
+        - High matches (>70%) indicate well-covered topics
+        - Low matches (<30%) reveal content gaps
+        - Use this for content optimization
+        
+        **🤖 Multi-Provider Strategy**
+        - Gemini: Fast and cost-effective
+        - GPT-4: Advanced reasoning
+        - Claude: Nuanced understanding
+        - Try different providers for different perspectives
+        
+        **📤 Export Strategies**
+        - CSV: For spreadsheet analysis
+        - PDF: For client reports
+        - JSON: For programmatic use
+        - HTML visualizations: For interactive sharing
+        
+        **⚡ Performance Tips**
+        - Lower temperature for consistent results
+        - Higher temperature for creative variations
+        - Adjust max tokens based on query complexity
+        - Use categories to filter model selection
+        """)
+    
+    # Credits and Attribution
+    with st.expander("👥 Credits & Attribution", expanded=True):
+        st.markdown("""
+        ### 🏆 Qforia Pro Team
+        
+        #### 🚀 **Version 3.0 Developer**
+        **Tyler Einberger** - Enhanced and expanded Qforia with advanced features
+        
+        Connect with Tyler:
+        - 💼 [LinkedIn](https://www.linkedin.com/in/tyler-einberger)
+        - 🌐 [Personal Website](https://www.tylereinberger.com/)
+        - 🏢 [Momentic Marketing](https://momenticmarketing.com/team/tyler-einberger)
+        - 🏙️ [MKE DMC](https://www.mkedmc.org/people/tyler-einberger)
+        
+        #### 🎨 **Original Creator**
+        **Mike King** - Created Qforia 1.0, the foundation for this tool
+        - 🔗 [Original Qforia](https://qforia.streamlit.app/)
+        
+        Special thanks to Mike for creating the original concept and making it open source!
+        
+        ---
+        
+        ### 📜 Version History
+        - **v3.0** (Current): Multi-provider support, visualizations, content analysis, PDF reports
+        - **v2.0**: Enhanced UI, confidence scoring, session history
+        - **v1.0**: Original by Mike King - Core query generation concept
+        """)
+    
+    # API Resources
+    with st.expander("🔗 API Documentation & Resources"):
+        st.markdown("""
+        ### Getting API Keys
+        
+        **Google Gemini**
+        - 🔗 [Get API Key](https://makersuite.google.com/app/apikey)
+        - 📚 [Documentation](https://ai.google.dev/docs)
+        - 💰 Free tier available
+        
+        **OpenAI**
+        - 🔗 [Get API Key](https://platform.openai.com/api-keys)
+        - 📚 [Documentation](https://platform.openai.com/docs)
+        - 💰 Pay-as-you-go pricing
+        
+        **Anthropic Claude**
+        - 🔗 [Get API Key](https://console.anthropic.com/)
+        - 📚 [Documentation](https://docs.anthropic.com/)
+        - 💰 Usage-based pricing
+        
+        ### Model Recommendations
+        
+        **For Speed & Cost**: 
+        - Gemini 1.5 Flash
+        - GPT-4o mini
+        - Claude Haiku
+        
+        **For Quality**:
+        - Gemini 2.5 Pro
+        - GPT-4
+        - Claude Opus/Sonnet
+        
+        **For Balance**:
+        - Gemini 2.0 Flash
+        - GPT-4o
+        - Claude Sonnet 3.5
+        """)
+    
+    # Use Cases
+    with st.expander("💡 Use Cases & Examples"):
+        st.markdown("""
+        ### How Different Teams Use Qforia Pro
+        
+        **SEO Professionals**
+        - Keyword research and expansion
+        - Content gap analysis
+        - Search intent understanding
+        - Competitor content planning
+        
+        **Content Marketers**
+        - Blog topic ideation
+        - Content cluster planning
+        - FAQ generation
+        - User question discovery
+        
+        **Product Teams**
+        - Feature request analysis
+        - User need exploration
+        - Documentation planning
+        - Support content creation
+        
+        **Researchers**
+        - Literature review queries
+        - Research question refinement
+        - Topic exploration
+        - Grant proposal keywords
+        
+        **Example Workflow**:
+        1. Start with: "sustainable packaging solutions"
+        2. Generate 35 queries in Research Mode
+        3. Analyze existing content against queries
+        4. Identify gaps where match scores are low
+        5. Create content plan based on gaps
+        6. Export visualization for team presentation
+        """)
+    
+    # Footer
+    st.markdown("---")
+    st.markdown("""
+    <div style='text-align: center; padding: 20px;'>
+        <h4>HeLLiuM - Multiplied intelligence. LLM Query Fan Out Simulator.</h4>
+        <p>Vibe-coded by Tyler Einberger, based on original work by Mike King</p>
+        <p>Powered by your LLM of choice (Google Gemini, OpenAI, or Anthropic Claude)</p>
+        <br>
+        <p><em>"Understanding search intent is the key to creating content that truly serves your audience."</em></p>
+    </div>
+    """, unsafe_allow_html=True)
+
 # Footer
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: #666;'>
-    <p>Qforia Pro v3.0 | Multi-Provider AI Query Intelligence</p>
-    <p>Supporting Google Gemini, OpenAI, and Anthropic Claude</p>
+    <p>HeLLiuM - Multiplied intelligence. LLM Query Fan Out Simulator.</p>
+    <p>Created by <a href='https://www.linkedin.com/in/tyler-einberger' target='_blank'>Tyler Einberger</a> | 
+    Based on <a href='https://qforia.streamlit.app/' target='_blank'>original</a> by Mike King</p>
 </div>
 """, unsafe_allow_html=True)
