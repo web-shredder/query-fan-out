@@ -62,7 +62,7 @@ st.markdown("""
     .query-card {
         background-color: #ffffff;
         padding: 15px;
-        border-radius: 8px;
+        border-radius: 32px;
         border: 1px solid #e0e0e0;
         margin: 5px 0;
     }
@@ -78,8 +78,8 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("HeLLiuM 🐍")
-st.markdown("*Multiplied intelligence. LLM Query Fan Out Simulator. Powered by Gemini, OpenAI, and Claude with Advanced Analytics*")
+st.title("[he]LL[iu]M 🐍")
+st.markdown("*Multiplied intelligence. LLM Query Fan Out Simulator & Content Analysis.*")
 
 # Initialize session state
 if 'query_history' not in st.session_state:
@@ -247,7 +247,7 @@ with st.sidebar.expander("ℹ️ Model Availability Notes"):
 with st.sidebar.expander("🎯 Query Settings", expanded=True):
     user_query = st.text_area(
         "Primary Query", 
-        "What's the best electric SUV for driving up mt rainier?",
+        "What's the best way to reach my audience online?",
         height=100
     )
     
@@ -345,7 +345,7 @@ def get_ai_response(prompt, provider, model):
             response = client.chat.completions.create(
                 model=model,
                 messages=[
-                    {"role": "system", "content": "You are a helpful assistant that generates search queries."},
+                    {"role": "system", "content": "You are an advanced search query expansion system based on Google's 'Generating Diverse Queries for Search Autocomplete' and 'Search with Stateful Chat' patents. You specialize in query fan-out methodology, generating reformulations, related queries, implicit queries, comparative queries, entity-focused variations, and personalized contextual queries. Your goal is to expand a single query into a comprehensive set of search variations that capture different user intents, contexts, and information needs - similar to how modern search engines internally process queries to better understand and serve user intent."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=temperature,
@@ -1137,140 +1137,107 @@ with tabs[4]:  # History Tab
 with tabs[5]:  # Resources Tab
     st.markdown("### 📖 Resources & Documentation")
     
-    # Quick Start Guide
-    with st.expander("🚀 Quick Start Guide", expanded=True):
-        st.markdown("""
-        ### Getting Started with Qforia Pro
-        
-        **1. Set Up Your API Key**
-        - Choose your AI provider (Gemini, OpenAI, or Claude)
-        - Enter your API key in the sidebar
-        - Select your preferred model
-        
-        **2. Configure Your Query**
-        - Enter your main search query
-        - Choose a search mode based on your needs:
-          - **AI Overview**: 12-20 queries for quick exploration
-          - **AI Mode (Complex)**: 20-35 queries for comprehensive coverage
-          - **Research Mode**: 35-50 queries for deep research
-          - **Comparative Analysis**: Focus on comparisons
-          - **Multi-Perspective**: Various viewpoints
-        
-        **3. Generate Queries**
-        - Click "Generate Queries" to create variations
-        - Review results in the Results tab
-        - Filter by type, priority, or confidence
-        
-        **4. Analyze Content (Optional)**
-        - Paste your content in the Content Analysis tab
-        - See how well your content matches the queries
-        - Export analysis results
-        
-        **5. Visualize & Export**
-        - View hierarchical visualizations
-        - Export as CSV, PDF, or JSON
-        - Save visualizations as images
-        """)
-    
-    # About the Technology
-    with st.expander("🧠 Understanding the Technology"):
-        st.markdown("""
-        ### The Google Patent Explained
-        
-        Qforia Pro is inspired by Google's "Search with Stateful Chat" patent, which describes how modern search engines generate multiple query variations to better understand user intent.
-        
-        **Key Concepts:**
-        
-        📍 **Query Fan-Out**: Instead of processing just one query, the system generates many related queries to explore different aspects of your search intent.
-        
-        🔄 **Query Types**:
-        - **Reformulations**: Different ways to phrase the same question
-        - **Related Queries**: Adjacent topics you might be interested in
-        - **Implicit Queries**: Hidden questions within your main query
-        - **Comparative Queries**: Comparisons you might want to make
-        - **Entity Expansions**: Deep dives on specific things mentioned
-        - **Personalized Queries**: Variations based on context
-        
-        🎯 **Why This Matters**:
-        - Better content coverage for SEO
-        - Understanding user search behavior
-        - Creating comprehensive content strategies
-        - Identifying content gaps
-        - Improving search relevance
-        
-        💡 **Real-World Application**: When you search for "best electric SUV", Google might internally generate queries like:
-        - "electric SUV comparison 2024"
-        - "Tesla Model Y vs competitors"
-        - "electric SUV range anxiety"
-        - "cost of owning electric SUV"
-        - And dozens more...
-        
-        This tool gives you access to that same powerful capability!
-        """)
-    
-    # Advanced Features
-    with st.expander("🔬 Advanced Features & Tips"):
-        st.markdown("""
-        ### Pro Tips for Power Users
-        
-        **🎨 Visualization Features**
-        - Use Treemap view for hierarchical analysis
-        - Switch to Sunburst for radial exploration
-        - Colors indicate confidence or match scores
-        - Click sections to zoom in (Sunburst)
-        
-        **📊 Content Analysis**
-        - Match scores show keyword overlap
-        - High matches (>70%) indicate well-covered topics
-        - Low matches (<30%) reveal content gaps
-        - Use this for content optimization
-        
-        **🤖 Multi-Provider Strategy**
-        - Gemini: Fast and cost-effective
-        - GPT-4: Advanced reasoning
-        - Claude: Nuanced understanding
-        - Try different providers for different perspectives
-        
-        **📤 Export Strategies**
-        - CSV: For spreadsheet analysis
-        - PDF: For client reports
-        - JSON: For programmatic use
-        - HTML visualizations: For interactive sharing
-        
-        **⚡ Performance Tips**
-        - Lower temperature for consistent results
-        - Higher temperature for creative variations
-        - Adjust max tokens based on query complexity
-        - Use categories to filter model selection
-        """)
-    
-    # Credits and Attribution
-    with st.expander("👥 Credits & Attribution", expanded=True):
-        st.markdown("""
-        ### 🏆 Qforia Pro Team
-        
-        #### 🚀 **Version 3.0 Developer**
-        **Tyler Einberger** - Enhanced and expanded Qforia with advanced features
-        
-        Connect with Tyler:
-        - 💼 [LinkedIn](https://www.linkedin.com/in/tyler-einberger)
-        - 🌐 [Personal Website](https://www.tylereinberger.com/)
-        - 🏢 [Momentic Marketing](https://momenticmarketing.com/team/tyler-einberger)
-        - 🏙️ [MKE DMC](https://www.mkedmc.org/people/tyler-einberger)
-        
-        #### 🎨 **Original Creator**
-        **Mike King** - Created Qforia 1.0, the foundation for this tool
-        - 🔗 [Original Qforia](https://qforia.streamlit.app/)
-        
-        Special thanks to Mike for creating the original concept and making it open source!
-        
-        ---
-        
-        ### 📜 Version History
-        - **v3.0** (Current): Multi-provider support, visualizations, content analysis, PDF reports
-        - **v2.0**: Enhanced UI, confidence scoring, session history
-        - **v1.0**: Original by Mike King - Core query generation concept
-        """)
+   # Quick Start Guide
+with st.expander("🚀 Quick Start Guide", expanded=True):
+    st.markdown("""
+### Getting Started with [he]LL[iu]M
+
+**Set your API key**  
+Choose Gemini, OpenAI, or Claude. Drop the key in the sidebar. Pick a model.
+
+**Define your search**  
+Type the main query. Pick a mode:  
+- **AI Overview** – 12–20 quick probes  
+- **AI Mode (Complex)** – 20–35 broader probes  
+- **Research Mode** – 35–50 deep dives  
+- **Comparative Analysis** – side-by-side checks  
+- **Multi-Perspective** – varied viewpoints
+
+**Generate variations**  
+Hit **Generate Queries**. Scan the Results tab. Filter by type, priority, or confidence.
+
+**Check your content (optional)**  
+Open **Content Analysis**. Paste text. See match scores and gaps. Export if needed.
+
+**Visualize and export**  
+Open the **Visualize** tab. Use Treemap or Sunburst to inspect coverage. Export CSV, PDF, JSON, or images.
+""")
+
+# About the Technology
+with st.expander("🧠 Understanding the Technology"):
+    st.markdown("""
+### How Google fans out a search
+
+Modern search uses the idea of **query fan-out**.  
+*Definition:* The engine spins your single question into many related ones to read intent better.  
+*Why it matters:* Your content wins when it answers those hidden angles.
+
+**Main query types**
+
+| Type | One-line meaning | Why it matters |
+| ---- | ---------------- | -------------- |
+| Reformulation | Same ask, new words | Captures synonyms |
+| Related | Neighbor topics | Broadens coverage |
+| Implicit | Hidden follow-ups | Fills blind spots |
+| Comparative | A vs. B checks | Supports buyer choices |
+| Entity expansion | Deep dive on a thing | Gains authority |
+| Personalized | Adds context | Meets specific needs |
+
+*Real example* – A search for **best electric SUV** can fan out to:  
+- “electric SUV comparison 2025”  
+- “Tesla Model Y vs Hyundai Ioniq 5”  
+- “electric SUV charging cost”  
+- “range anxiety tips”  
+The tool gives you that same reach.
+""")
+
+# Advanced Features
+with st.expander("🔬 Advanced Features & Tips"):
+    st.markdown("""
+### Power moves
+
+**Visualize**  
+Treemap shows hierarchy. Sunburst shows depth. Click a slice to zoom. Color tracks confidence.
+
+**Content scores**  
+Match ≥70 % means you cover the idea well. Match ≤30 % flags a gap.
+
+**Mix providers**  
+- **Gemini** – fast, budget-friendly  
+- **GPT-4** – sharp reasoning  
+- **Claude** – subtle language  
+Swap models for richer angles.
+
+**Export**  
+CSV for sheets, PDF for clients, JSON for your code, HTML charts for shareable views.
+
+**Tune speed**  
+Lower *temperature* for steady output. Raise it for creative leaps. Trim *max tokens* on simple asks.
+""")
+
+# Credits and Attribution
+with st.expander("👥 Credits & Attribution", expanded=True):
+    st.markdown("""
+### About this tool
+
+**Version 3.0** – Expanded by **Tyler Einberger**
+
+Connect  
+- [LinkedIn](https://www.linkedin.com/in/tyler-einberger)  
+- [Website](https://www.tylereinberger.com/)  
+- [Momentic](https://momenticmarketing.com/)  
+- [MKE DMC](https://www.mkedmc.org/)
+
+**Original creator** – **Mike King** built Qforia 1.0  
+[Original app](https://qforia.streamlit.app/)
+
+---
+
+### Version history
+- **3.0** – Multi-provider support, visualizations, content analysis, PDF reports  
+- **2.0** – New UI, confidence scores, session history  
+- **1.0** – Core query generation concept from Mike King
+""")
     
     # API Resources
     with st.expander("🔗 API Documentation & Resources"):
@@ -1315,13 +1282,13 @@ with tabs[5]:  # Resources Tab
         st.markdown("""
         ### How Different Teams Use Qforia Pro
         
-        **SEO Professionals**
+        **SEO**
         - Keyword research and expansion
         - Content gap analysis
         - Search intent understanding
         - Competitor content planning
         
-        **Content Marketers**
+        **Content**
         - Blog topic ideation
         - Content cluster planning
         - FAQ generation
