@@ -1376,3 +1376,697 @@ with tabs[1]:  # Results Tab
         elif sort_by == "Type":
             filtered_results.sort(key=lambda x: x.get('type', 'unknown'))
         elif sort_by == "Query Length":
+        if sort_by == "Confidence":
+            filtered_results.sort(key=lambda x: x.get('confidence', 0), reverse=True)
+        elif sort_by == "Priority":
+            priority_order = {'high': 3, 'medium': 2, 'low': 1}
+            filtered_results.sort(key=lambda x: priority_order.get(x.get('priority', 'medium'), 2), reverse=True)
+        elif sort_by == "Type":
+            filtered_results.sort(key=lambda x: x.get('type', 'unknown'))
+        elif sort_by == "Query Length":
+            filtered_results.sort(key=lambda x: len(x.get('query', '')), reverse=True)
+        
+        # Display filtered results
+        st.markdown(f"### 📊 Showing {len(filtered_results)} queries")
+        
+        if not filtered_results:
+            st.warning("No queries match your filters. Try adjusting the criteria.")
+        else:
+            # Display queries with enhanced formatting
+            for idx, query in enumerate(filtered_results, 1):
+                with st.container():
+                    col1, col2, col3 = st.columns([6, 2, 2])
+                    
+                    with col1:
+                        # Query text with priority indicator
+                        priority_colors = {
+                            'high': '🔴',
+                            'medium': '🟡', 
+                            'low': '🟢'
+                        }
+                        priority_icon = priority_colors.get(query.get('priority', 'medium'), '⚪')
+                        
+                        st.markdown(f"**{idx}. {query.get('query', 'Unknown Query')}**")
+                        
+                        # Show additional details if available
+                        details = []
+                        if 'intent' in query:
+                            details.append(f"💡 {query['intent']}")
+                        if 'reasoning' in query:
+                            details.append(f"📝 {query['reasoning']}")
+                        
+                        if details:
+                            st.caption(" | ".join(details))
+                    
+                    with col2:
+                        # Type and confidence
+                        type_info = QUERY_TYPES.get(query.get('type', 'unknown'), {
+                            'name': query.get('type', 'Unknown'),
+                            'icon': '❓'
+                        })
+                        st.markdown(f"{type_info['icon']} **{type_info['name']}**")
+                        st.markdown(f"**{query.get('confidence', 0):.0%}** confidence")
+                    
+                    with col3:
+                        # Priority and actions
+                        priority = query.get('priority', 'medium')
+                        st.markdown(f"{priority_icon} **{priority.upper()}**")
+                        
+                        # Query length
+                        query_length = len(query.get('query', ''))
+                        st.caption(f"Length: {query_length} chars")
+                    
+                    st.divider()
+    
+    else:
+        st.info("👆 Generate queries first to see results here.")
+
+with tabs[2]:  # Content Analysis Tab
+    if st.session_state.last_results:
+        st.markdown("### 🔍 Content Analysis")
+        st.markdown("Analyze how well your content matches the generated queries")
+        
+        content_input = st.text_area(
+            "Paste your content here",
+            height=200,
+            placeholder="Paste the content you want to analyze against the generated queries...",
+            help="Enter the text content you want to analyze for keyword matches with your generated queries"
+        )
+        
+        if st.button("🔬 Analyze Content", type="primary"):
+            if content_input.strip():
+                with st.spinner("Analyzing content matches..."):
+                    analysis = analyze_content(content_input, st.session_state.last_results)
+                    st.session_state.content_analysis = analysis
+                    
+                    # Display results
+                    st.success(f"✅ Analysis complete! Found matches for {len(analysis)} queries.")
+                    
+                    # Summary metrics
+                    col1, col2, col3, col4 = st.columns(4)
+                    
+                    high_matches = [a for a in analysis if a['match_score'] > 0.7]
+                    medium_matches = [a for a in analysis if 0.3 < a['match_score'] <= 0.7]
+                    low_matches = [a for a in analysis if a['match_score'] <= 0.3]
+                    zero_matches = [a for a in analysis if a['match_score'] == 0]
+                    
+                    with col1:
+                        st.metric("🟢 High Matches", len(high_matches), help="Queries with >70% keyword match")
+                    with col2:
+                        st.metric("🟡 Medium Matches", len(medium_matches), help="Queries with 30-70% keyword match")
+                    with col3:
+                        st.metric("🔴 Low Matches", len(low_matches), help="Queries with <30% keyword match")
+                    with col4:
+                        st.metric("⚫ No Matches", len(zero_matches), help="Queries with no keyword matches")
+                    
+                    # Detailed results
+                    st.markdown("---")
+                    st.markdown("#### 🎯 Query Match Analysis")
+                    
+                    # Filter options for analysis results
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        score_filter = st.selectbox(
+                            "Filter by match score",
+                            ["All Scores", "High (>70%)", "Medium (30-70%)", "Low (<30%)", "No Match (0%)"],
+                            key="analysis_filter"
+                        )
+                    with col2:
+                        sort_analysis = st.selectbox(
+                            "Sort by",
+                            ["Match Score (High to Low)", "Match Score (Low to High)", "Query Type", "Alphabetical"],
+                            key="analysis_sort"
+                        )
+                    
+                    # Apply filters
+                    filtered_analysis = analysis.copy()
+                    
+                    if score_filter == "High (>70%)":
+                        filtered_analysis = [a for a in filtered_analysis if a['match_score'] > 0.7]
+                    elif score_filter == "Medium (30-70%)":
+                        filtered_analysis = [a for a in filtered_analysis if 0.3 < a['match_score'] <= 0.7]
+                    elif score_filter == "Low (<30%)":
+                        filtered_analysis = [a for a in filtered_analysis if 0 < a['match_score'] <= 0.3]
+                    elif score_filter == "No Match (0%)":
+                        filtered_analysis = [a for a in filtered_analysis if a['match_score'] == 0]
+                    
+                    # Apply sorting
+                    if sort_analysis == "Match Score (High to Low)":
+                        filtered_analysis.sort(key=lambda x: x['match_score'], reverse=True)
+                    elif sort_analysis == "Match Score (Low to High)":
+                        filtered_analysis.sort(key=lambda x: x['match_score'])
+                    elif sort_analysis == "Query Type":
+                        filtered_analysis.sort(key=lambda x: x['type'])
+                    elif sort_analysis == "Alphabetical":
+                        filtered_analysis.sort(key=lambda x: x['query'].lower())
+                    
+                    # Display filtered results
+                    if not filtered_analysis:
+                        st.warning("No queries match your filter criteria.")
+                    else:
+                        st.markdown(f"**Showing {len(filtered_analysis)} of {len(analysis)} queries**")
+                        
+                        for idx, match in enumerate(filtered_analysis[:50], 1):  # Limit to 50 for performance
+                            score = match['match_score']
+                            
+                            # Determine score styling
+                            if score > 0.7:
+                                score_color = "🟢"
+                                score_bg = "background-color: #d4edda; border-left: 4px solid #28a745;"
+                            elif score > 0.3:
+                                score_color = "🟡"
+                                score_bg = "background-color: #fff3cd; border-left: 4px solid #ffc107;"
+                            elif score > 0:
+                                score_color = "🔴"
+                                score_bg = "background-color: #f8d7da; border-left: 4px solid #dc3545;"
+                            else:
+                                score_color = "⚫"
+                                score_bg = "background-color: #f8f9fa; border-left: 4px solid #6c757d;"
+                            
+                            # Create expandable container
+                            with st.container():
+                                st.markdown(f"""
+                                <div style='padding: 15px; margin: 10px 0; border-radius: 5px; {score_bg}'>
+                                    <div style='display: flex; justify-content: space-between; align-items: center;'>
+                                        <div style='flex: 1;'>
+                                            <strong>{idx}. {match['query']}</strong>
+                                        </div>
+                                        <div style='text-align: right; margin-left: 20px;'>
+                                            <span style='font-size: 1.2em;'>{score_color} <strong>{score:.0%}</strong></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                """, unsafe_allow_html=True)
+                                
+                                # Show details in expandable section
+                                with st.expander(f"View details for query {idx}", expanded=False):
+                                    col1, col2 = st.columns(2)
+                                    
+                                    with col1:
+                                        type_info = QUERY_TYPES.get(match['type'], {'name': match['type'], 'icon': '❓'})
+                                        st.markdown(f"**Type:** {type_info['icon']} {type_info['name']}")
+                                        st.markdown(f"**Priority:** {match.get('priority', 'N/A')}")
+                                        st.markdown(f"**Confidence:** {match.get('confidence', 0):.0%}")
+                                    
+                                    with col2:
+                                        if match.get('matched_words'):
+                                            st.markdown(f"**Matched Keywords:** {', '.join(match['matched_words'])}")
+                                        else:
+                                            st.markdown("**Matched Keywords:** None")
+                                        
+                                        if match.get('query_keywords'):
+                                            st.markdown(f"**All Query Keywords:** {', '.join(match['query_keywords'])}")
+                    
+                    # Export analysis
+                    st.markdown("---")
+                    st.markdown("#### 📤 Export Analysis")
+                    
+                    col1, col2, col3 = st.columns(3)
+                    
+                    with col1:
+                        if st.button("📊 Export Analysis as CSV"):
+                            analysis_df = pd.DataFrame(analysis)
+                            # Add type names for readability
+                            analysis_df['type_name'] = analysis_df['type'].apply(
+                                lambda x: QUERY_TYPES.get(x, {'name': x}).get('name', x)
+                            )
+                            csv = analysis_df.to_csv(index=False)
+                            st.download_button(
+                                "Download Analysis CSV",
+                                data=csv,
+                                file_name=f"content_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                                mime="text/csv"
+                            )
+                    
+                    with col2:
+                        if st.button("📋 Export Top Matches JSON"):
+                            top_matches = [a for a in analysis if a['match_score'] > 0.3]
+                            json_data = json.dumps(top_matches, indent=2)
+                            st.download_button(
+                                "Download Top Matches JSON",
+                                data=json_data,
+                                file_name=f"top_matches_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                                mime="application/json"
+                            )
+                    
+                    with col3:
+                        if st.button("🎯 Export Content Gaps"):
+                            gaps = [a for a in analysis if a['match_score'] < 0.3]
+                            gaps_df = pd.DataFrame(gaps)
+                            if not gaps_df.empty:
+                                gaps_df['type_name'] = gaps_df['type'].apply(
+                                    lambda x: QUERY_TYPES.get(x, {'name': x}).get('name', x)
+                                )
+                                csv = gaps_df.to_csv(index=False)
+                                st.download_button(
+                                    "Download Content Gaps CSV",
+                                    data=csv,
+                                    file_name=f"content_gaps_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                                    mime="text/csv"
+                                )
+                            else:
+                                st.info("No content gaps found - all queries have good matches!")
+            else:
+                st.warning("⚠️ Please enter content to analyze")
+    else:
+        st.info("👆 Generate queries first to enable content analysis.")
+
+with tabs[3]:  # Visualization Tab
+    if st.session_state.last_results and include_mindmap:
+        st.markdown("### 🗺️ Query Visualization")
+        st.markdown("Interactive hierarchical view of query relationships")
+        
+        # Visualization controls
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            viz_type = st.selectbox(
+                "Visualization Type",
+                ["Treemap", "Sunburst"],
+                help="Choose your preferred visualization style"
+            )
+        
+        with col2:
+            include_match_scores = st.checkbox(
+                "Show Content Match Scores",
+                value=bool(st.session_state.content_analysis),
+                disabled=not bool(st.session_state.content_analysis),
+                help="Run content analysis first to see match scores"
+            )
+        
+        with col3:
+            color_scheme = st.selectbox(
+                "Color Scheme",
+                ["RdYlGn", "Viridis", "Blues", "Reds", "Plasma"],
+                help="Choose color scheme for the visualization"
+            )
+        
+        # Create visualization
+        try:
+            if viz_type == "Treemap":
+                viz_fig = create_hierarchical_visualization(
+                    st.session_state.last_results, 
+                    st.session_state.last_query,
+                    st.session_state.content_analysis if include_match_scores else None
+                )
+            else:  # Sunburst
+                viz_fig = create_sunburst_visualization(
+                    st.session_state.last_results,
+                    st.session_state.last_query,
+                    st.session_state.content_analysis if include_match_scores else None
+                )
+            
+            # Update color scheme
+            viz_fig.update_traces(
+                marker=dict(colorscale=color_scheme)
+            )
+            
+            # Display visualization
+            st.plotly_chart(viz_fig, use_container_width=True)
+            
+            # Legend and interpretation
+            st.markdown("---")
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("#### 📊 Color Legend")
+                if include_match_scores and st.session_state.content_analysis:
+                    st.success("🟢 High Content Match (>70%)")
+                    st.warning("🟡 Medium Content Match (30-70%)")
+                    st.error("🔴 Low Content Match (<30%)")
+                else:
+                    st.info("💙 Colors represent confidence scores")
+                    st.caption("Higher confidence = More relevant to original query")
+            
+            with col2:
+                st.markdown("#### 🎯 Interpretation Guide")
+                if viz_type == "Treemap":
+                    st.markdown("""
+                    - **Size** = Number of queries in each category
+                    - **Color** = Confidence or match score
+                    - **Sections** = Different query types
+                    - Larger, greener sections = High-value areas
+                    """)
+                else:
+                    st.markdown("""
+                    - **Inner ring** = Query categories
+                    - **Outer ring** = Individual queries  
+                    - **Color** = Confidence or match score
+                    - Click sections to focus/zoom
+                    """)
+            
+            # Export visualization options
+            st.markdown("---")
+            st.markdown("#### 📤 Export Visualization")
+            
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                if st.button("📸 Save as PNG"):
+                    img_bytes = viz_fig.to_image(format="png", width=1600, height=1200, scale=2)
+                    st.download_button(
+                        "Download High-Res PNG",
+                        data=img_bytes,
+                        file_name=f"query_visualization_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png",
+                        mime="image/png"
+                    )
+            
+            with col2:
+                if st.button("📊 Save as Interactive HTML"):
+                    html_str = viz_fig.to_html(include_plotlyjs='cdn')
+                    st.download_button(
+                        "Download Interactive HTML",
+                        data=html_str,
+                        file_name=f"query_visualization_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html",
+                        mime="text/html"
+                    )
+            
+            with col3:
+                if st.button("🎨 Save as SVG"):
+                    svg_bytes = viz_fig.to_image(format="svg")
+                    st.download_button(
+                        "Download SVG",
+                        data=svg_bytes,
+                        file_name=f"query_visualization_{datetime.now().strftime('%Y%m%d_%H%M%S')}.svg",
+                        mime="image/svg+xml"
+                    )
+            
+            with col4:
+                if st.button("📈 Save as PDF"):
+                    pdf_bytes = viz_fig.to_image(format="pdf", width=1600, height=1200)
+                    st.download_button(
+                        "Download PDF",
+                        data=pdf_bytes,
+                        file_name=f"query_visualization_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                        mime="application/pdf"
+                    )
+                    
+        except Exception as e:
+            st.error(f"Error creating visualization: {str(e)}")
+            st.info("💡 Try generating queries first, or check if all required data is available.")
+    
+    else:
+        st.info("👆 Generate queries with visualization option enabled to see the hierarchical view.")
+
+with tabs[4]:  # History Tab
+    st.markdown("### 📚 Query Generation History")
+    
+    if st.session_state.query_history:
+        # History controls
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            history_limit = st.selectbox(
+                "Show entries",
+                [5, 10, 20, 50, "All"],
+                index=1,
+                help="Number of history entries to display"
+            )
+        
+        with col2:
+            if st.button("🗑️ Clear History"):
+                st.session_state.query_history = []
+                st.rerun()
+        
+        with col3:
+            if st.button("📊 Export History"):
+                history_df = pd.DataFrame(st.session_state.query_history)
+                csv = history_df.to_csv(index=False)
+                st.download_button(
+                    "Download History CSV",
+                    data=csv,
+                    file_name=f"query_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv"
+                )
+        
+        # Display history
+        entries_to_show = st.session_state.query_history
+        if history_limit != "All":
+            entries_to_show = entries_to_show[-history_limit:]
+        
+        for idx, entry in enumerate(reversed(entries_to_show), 1):
+            with st.expander(
+                f"{idx}. {entry.get('timestamp', 'Unknown time')} - {entry.get('query', 'Unknown query')[:50]}... "
+                f"({entry.get('results_count', 0)} queries)",
+                expanded=False
+            ):
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.markdown(f"**Query:** {entry.get('query', 'N/A')}")
+                    st.markdown(f"**Mode:** {entry.get('mode', 'N/A')}")
+                    st.markdown(f"**Results:** {entry.get('results_count', 0)} queries")
+                
+                with col2:
+                    st.markdown(f"**Provider:** {entry.get('provider', 'N/A')}")
+                    st.markdown(f"**Model:** {entry.get('model', 'N/A')}")
+                    if 'personalization' in entry and entry['personalization']:
+                        st.markdown("**Personalization:** Applied")
+                    else:
+                        st.markdown("**Personalization:** None")
+    else:
+        st.info("📝 No history yet. Start generating queries to build your history!")
+        st.markdown("""
+        **Your history will include:**
+        - 📅 Timestamp of each generation
+        - 🔍 Original queries used  
+        - 🤖 AI provider and model
+        - ⚙️ Generation settings
+        - 📊 Results summary
+        """)
+
+with tabs[5]:  # Resources Tab
+    st.markdown("### 📖 Resources & Documentation")
+    
+    # Quick Start Guide
+    with st.expander("🚀 Quick Start Guide", expanded=True):
+        st.markdown("""
+        ### Getting Started with heLLiuM
+        
+        **1. Set Up Your API Key**
+        - Choose your AI provider (Gemini, OpenAI, or Claude)
+        - Enter your API key in the sidebar
+        - Select your preferred model
+        
+        **2. Configure Your Query**
+        - Enter your main search query
+        - Choose a search mode based on your needs:
+          - **AI Overview**: 12-20 queries for quick exploration
+          - **AI Mode (Complex)**: 20-35 queries for comprehensive coverage
+          - **Research Mode**: 35-50 queries for deep research
+          - **Comparative Analysis**: Focus on comparisons
+          - **Multi-Perspective**: Various viewpoints
+        
+        **3. Generate Queries**
+        - Click "Generate Queries" to create variations
+        - Review results in the Results tab
+        - Filter by type, priority, or confidence
+        
+        **4. Analyze Content (Optional)**
+        - Paste your content in the Content Analysis tab
+        - See how well your content matches the queries
+        - Export analysis results
+        
+        **5. Visualize & Export**
+        - View hierarchical visualizations
+        - Export as CSV, PDF, or JSON
+        - Save visualizations as images
+        """)
+    
+    # About the Technology
+    with st.expander("🧠 Understanding the Technology"):
+        st.markdown("""
+        ### The Google Patent Explained
+        
+        heLLiuM is inspired by Google's "Search with Stateful Chat" patent, which describes how modern search engines generate multiple query variations to better understand user intent.
+        
+        **Key Concepts:**
+        
+        📍 **Query Fan-Out**: Instead of processing just one query, the system generates many related queries to explore different aspects of your search intent.
+        
+        🔄 **Query Types**:
+        - **Reformulations**: Different ways to phrase the same question
+        - **Related Queries**: Adjacent topics you might be interested in
+        - **Implicit Queries**: Hidden questions within your main query
+        - **Comparative Queries**: Comparisons you might want to make
+        - **Entity Expansions**: Deep dives on specific things mentioned
+        - **Personalized Queries**: Variations based on context
+        
+        🎯 **Why This Matters**:
+        - Better content coverage for SEO
+        - Understanding user search behavior
+        - Creating comprehensive content strategies
+        - Identifying content gaps
+        - Improving search relevance
+        
+        💡 **Real-World Application**: When you search for "best electric SUV", Google might internally generate queries like:
+        - "electric SUV comparison 2024"
+        - "Tesla Model Y vs competitors"
+        - "electric SUV range anxiety"
+        - "cost of owning electric SUV"
+        - And dozens more...
+        
+        heLLiuM gives you access to that same powerful capability!
+        """)
+    
+    # Advanced Features
+    with st.expander("🔬 Advanced Features & Tips"):
+        st.markdown("""
+        ### Pro Tips for Power Users
+        
+        **🎨 Visualization Features**
+        - Use Treemap view for hierarchical analysis
+        - Switch to Sunburst for radial exploration
+        - Colors indicate confidence or match scores
+        - Click sections to zoom in (Sunburst)
+        
+        **📊 Content Analysis**
+        - Match scores show keyword overlap
+        - High matches (>70%) indicate well-covered topics
+        - Low matches (<30%) reveal content gaps
+        - Use this for content optimization
+        
+        **🤖 Multi-Provider Strategy**
+        - Gemini: Fast and cost-effective
+        - GPT-4: Advanced reasoning
+        - Claude: Nuanced understanding
+        - Try different providers for different perspectives
+        
+        **📤 Export Strategies**
+        - CSV: For spreadsheet analysis
+        - PDF: For client reports
+        - JSON: For programmatic use
+        - HTML visualizations: For interactive sharing
+        
+        **⚡ Performance Tips**
+        - Lower temperature for consistent results
+        - Higher temperature for creative variations
+        - Adjust max tokens based on query complexity
+        - Use categories to filter model selection
+        """)
+    
+    # Credits and Attribution
+    with st.expander("👥 Credits & Attribution", expanded=True):
+        st.markdown("""
+        ### 🏆 heLLiuM Team
+        
+        #### 🚀 **Version 3.0 Developer**
+        **Tyler Einberger** - Enhanced and expanded Qforia into heLLiuM with advanced features
+        
+        Connect with Tyler:
+        - 💼 [LinkedIn](https://www.linkedin.com/in/tyler-einberger)
+        - 🌐 [Personal Website](https://www.tylereinberger.com/)
+        - 🏢 [Momentic Marketing](https://momenticmarketing.com/team/tyler-einberger)
+        - 🏙️ [MKE DMC](https://www.mkedmc.org/people/tyler-einberger)
+        
+        #### 🎨 **Original Creator**
+        **Mike King** - Created Qforia 1.0, the foundation for this tool
+        - 🔗 [Original Qforia](https://qforia.streamlit.app/)
+        
+        Special thanks to Mike for creating the original concept and making it open source!
+        
+        ---
+        
+        ### 📜 Version History
+        - **v3.0** (Current - heLLiuM): Multi-provider support, visualizations, content analysis, PDF reports
+        - **v2.0**: Enhanced UI, confidence scoring, session history
+        - **v1.0**: Original by Mike King - Core query generation concept
+        """)
+    
+    # API Resources - SEPARATE EXPANDER (not nested)
+    with st.expander("🔗 API Documentation & Resources"):
+        st.markdown("""
+        ### Getting API Keys
+        
+        **Google Gemini**
+        - 🔗 [Get API Key](https://makersuite.google.com/app/apikey)
+        - 📚 [Documentation](https://ai.google.dev/docs)
+        - 💰 Free tier available
+        
+        **OpenAI**
+        - 🔗 [Get API Key](https://platform.openai.com/api-keys)
+        - 📚 [Documentation](https://platform.openai.com/docs)
+        - 💰 Pay-as-you-go pricing
+        
+        **Anthropic Claude**
+        - 🔗 [Get API Key](https://console.anthropic.com/)
+        - 📚 [Documentation](https://docs.anthropic.com/)
+        - 💰 Usage-based pricing
+        
+        ### Model Recommendations
+        
+        **For Speed & Cost**: 
+        - Gemini 1.5 Flash
+        - GPT-4o mini
+        - Claude Haiku
+        
+        **For Quality**:
+        - Gemini 2.5 Pro
+        - GPT-4
+        - Claude Opus/Sonnet
+        
+        **For Balance**:
+        - Gemini 2.0 Flash
+        - GPT-4o
+        - Claude Sonnet 3.5
+        """)
+    
+    # Use Cases
+    with st.expander("💡 Use Cases & Examples"):
+        st.markdown("""
+        ### How Different Teams Use heLLiuM
+        
+        **SEO Professionals**
+        - Keyword research and expansion
+        - Content gap analysis
+        - Search intent understanding
+        - Competitor content planning
+        
+        **Content Marketers**
+        - Blog topic ideation
+        - Content cluster planning
+        - FAQ generation
+        - User question discovery
+        
+        **Product Teams**
+        - Feature request analysis
+        - User need exploration
+        - Documentation planning
+        - Support content creation
+        
+        **Researchers**
+        - Literature review queries
+        - Research question refinement
+        - Topic exploration
+        - Grant proposal keywords
+        
+        **Example Workflow**:
+        1. Start with: "sustainable packaging solutions"
+        2. Generate 35 queries in Research Mode
+        3. Analyze existing content against queries
+        4. Identify gaps where match scores are low
+        5. Create content plan based on gaps
+        6. Export visualization for team presentation
+        """)
+    
+    # Footer
+    st.markdown("---")
+    st.markdown("""
+    <div style='text-align: center; padding: 20px;'>
+        <h4>🔮 heLLiuM - LLM Query Fan Out Simulator</h4>
+        <p>Built with ❤️ by Tyler Einberger, based on original work by Mike King</p>
+        <p>Powered by Google Gemini, OpenAI, and Anthropic Claude</p>
+        <br>
+        <p><em>"Multiplied intelligence for search understanding."</em></p>
+    </div>
+    """, unsafe_allow_html=True)
+
+# Footer
+st.markdown("---")
+st.markdown("""
+<div style='text-align: center; color: #666;'>
+    <p>heLLiuM v3.0 | LLM Query Fan Out Simulator</p>
+    <p>Created by <a href='https://www.linkedin.com/in/tyler-einberger' target='_blank'>Tyler Einberger</a> | 
+    Based on <a href='https://qforia.streamlit.app/' target='_blank'>original</a> by Mike King</p>
+</div>
+""", unsafe_allow_html=True)
