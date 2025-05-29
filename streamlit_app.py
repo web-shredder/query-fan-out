@@ -34,7 +34,7 @@ except ImportError:
 try:
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import letter, A4
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image, PageBreak
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image, PageBreak, KeepTogether
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.units import inch
     from reportlab.lib.enums import TA_CENTER, TA_LEFT
@@ -492,8 +492,9 @@ def generate_queries(query, mode, provider, model, personalization_data=None):
             return []
 
 def create_hierarchical_visualization(queries, original_query, content_analysis=None):
-    """Create a hierarchical visualization of queries using treemap"""
+    """Create a modern hierarchical visualization using treemap with gradient colors"""
     import plotly.express as px
+    import plotly.graph_objects as go
     
     # Build data for treemap
     data = []
@@ -575,27 +576,50 @@ def create_hierarchical_visualization(queries, original_query, content_analysis=
         values='values',
         color=color_column,
         hover_data={'hover_text': True, 'names': False, 'parents': False, 'values': False},
-        color_continuous_scale='RdYlGn',
+        color_continuous_scale='Viridis',  # Modern gradient
         range_color=[0, 1]
     )
     
     fig.update_traces(
         textinfo="label",
         hovertemplate='%{customdata[0]}<extra></extra>',
-        marker=dict(cornerradius=5)
+        marker=dict(
+            cornerradius=5,
+            line=dict(width=2, color='rgba(255,255,255,0.3)')
+        ),
+        textfont=dict(
+            size=14,
+            family="Inter, system-ui, sans-serif"
+        )
     )
     
     fig.update_layout(
         margin=dict(t=50, l=25, r=25, b=25),
         height=700,
-        font=dict(size=12)
+        font=dict(size=12, family="Inter, system-ui, sans-serif"),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        coloraxis_colorbar=dict(
+            title="Score",
+            thicknessmode="pixels",
+            thickness=15,
+            lenmode="pixels",
+            len=200,
+            yanchor="top",
+            y=1,
+            ticks="outside",
+            tickmode="linear",
+            tick0=0,
+            dtick=0.2
+        )
     )
     
     return fig
 
 def create_sunburst_visualization(queries, original_query, content_analysis=None):
-    """Create a sunburst visualization of queries"""
+    """Create a modern sunburst visualization with radial gradient effect"""
     import plotly.express as px
+    import plotly.graph_objects as go
     
     # Build data for sunburst
     data = []
@@ -691,18 +715,231 @@ def create_sunburst_visualization(queries, original_query, content_analysis=None
         values='values',
         color=color_column,
         hover_data={'full_query': True, 'confidence': ':.0%', 'match_score': ':.0%'},
-        color_continuous_scale='RdYlGn',
+        color_continuous_scale=[
+            [0, '#FF6B6B'],     # Red
+            [0.25, '#F7DC6F'],  # Yellow
+            [0.5, '#45B7D1'],   # Blue
+            [0.75, '#98D8C8'],  # Mint
+            [1, '#4ECDC4']      # Teal
+        ],
         range_color=[0, 1]
     )
     
     fig.update_traces(
         textinfo="label",
-        hovertemplate='<b>%{label}</b><br>Query: %{customdata[0]}<br>Confidence: %{customdata[1]}<br>Match: %{customdata[2]}<extra></extra>'
+        hovertemplate='<b>%{label}</b><br>Query: %{customdata[0]}<br>Confidence: %{customdata[1]}<br>Match: %{customdata[2]}<extra></extra>',
+        marker=dict(
+            line=dict(color='white', width=2)
+        ),
+        textfont=dict(
+            size=12,
+            family="Inter, system-ui, sans-serif"
+        ),
+        insidetextorientation='radial'
     )
     
     fig.update_layout(
         margin=dict(t=50, l=25, r=25, b=25),
-        height=700
+        height=700,
+        font=dict(family="Inter, system-ui, sans-serif"),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        coloraxis_colorbar=dict(
+            title="Score",
+            thicknessmode="pixels",
+            thickness=15,
+            lenmode="pixels",
+            len=200,
+            yanchor="top",
+            y=1,
+            ticks="outside"
+        )
+    )
+    
+    return fig
+
+def create_network_visualization(queries, original_query, content_analysis=None):
+    """Create a modern network graph visualization"""
+    import plotly.graph_objects as go
+    import networkx as nx
+    import numpy as np
+    
+    # Create network graph
+    G = nx.Graph()
+    
+    # Add central node
+    G.add_node("root", label=original_query, type="root", size=50)
+    
+    # Add type nodes and query nodes
+    type_nodes = {}
+    for query in queries:
+        qtype = query.get('type', 'unknown')
+        type_info = QUERY_TYPES.get(qtype, {"name": qtype, "icon": "❓"})
+        type_label = f"{type_info['icon']} {type_info['name']}"
+        
+        # Add type node if not exists
+        if qtype not in type_nodes:
+            G.add_node(f"type_{qtype}", label=type_label, type="category", size=30)
+            G.add_edge("root", f"type_{qtype}")
+            type_nodes[qtype] = True
+        
+        # Add query node
+        query_id = f"query_{query['id']}"
+        
+        # Get match score if available
+        match_score = None
+        if content_analysis:
+            for analysis in content_analysis:
+                if analysis['query'] == query['query']:
+                    match_score = analysis['match_score']
+                    break
+        
+        G.add_node(
+            query_id, 
+            label=query['query'],
+            type="query",
+            confidence=query.get('confidence', 0),
+            match_score=match_score,
+            priority=query.get('priority', 'medium'),
+            size=15
+        )
+        G.add_edge(f"type_{qtype}", query_id)
+    
+    # Use spring layout for positioning
+    pos = nx.spring_layout(G, k=3, iterations=50, seed=42)
+    
+    # Create edge trace
+    edge_x = []
+    edge_y = []
+    for edge in G.edges():
+        x0, y0 = pos[edge[0]]
+        x1, y1 = pos[edge[1]]
+        edge_x.extend([x0, x1, None])
+        edge_y.extend([y0, y1, None])
+    
+    edge_trace = go.Scatter(
+        x=edge_x, y=edge_y,
+        line=dict(width=1, color='rgba(125,125,125,0.3)'),
+        hoverinfo='none',
+        mode='lines'
+    )
+    
+    # Create node traces by type
+    node_traces = []
+    
+    # Root node
+    root_trace = go.Scatter(
+        x=[pos["root"][0]],
+        y=[pos["root"][1]],
+        mode='markers+text',
+        text=[original_query[:30] + "..." if len(original_query) > 30 else original_query],
+        textposition="bottom center",
+        marker=dict(
+            size=60,
+            color='#FF6B6B',
+            line=dict(color='white', width=3)
+        ),
+        hovertext=[original_query],
+        hoverinfo='text',
+        name='Root Query'
+    )
+    node_traces.append(root_trace)
+    
+    # Category nodes
+    cat_x, cat_y, cat_text, cat_hover = [], [], [], []
+    for node, data in G.nodes(data=True):
+        if data.get('type') == 'category':
+            cat_x.append(pos[node][0])
+            cat_y.append(pos[node][1])
+            cat_text.append(data['label'])
+            cat_hover.append(data['label'])
+    
+    if cat_x:
+        cat_trace = go.Scatter(
+            x=cat_x, y=cat_y,
+            mode='markers+text',
+            text=cat_text,
+            textposition="top center",
+            marker=dict(
+                size=40,
+                color='#45B7D1',
+                line=dict(color='white', width=2),
+                symbol='diamond'
+            ),
+            hovertext=cat_hover,
+            hoverinfo='text',
+            name='Categories'
+        )
+        node_traces.append(cat_trace)
+    
+    # Query nodes
+    query_x, query_y, query_colors, query_hover, query_sizes = [], [], [], [], []
+    for node, data in G.nodes(data=True):
+        if data.get('type') == 'query':
+            query_x.append(pos[node][0])
+            query_y.append(pos[node][1])
+            
+            # Color based on match score or confidence
+            if data.get('match_score') is not None:
+                query_colors.append(data['match_score'])
+            else:
+                query_colors.append(data.get('confidence', 0))
+            
+            # Hover text
+            hover = f"<b>{data['label']}</b><br>"
+            hover += f"Confidence: {data.get('confidence', 0):.0%}<br>"
+            if data.get('match_score') is not None:
+                hover += f"Match Score: {data['match_score']:.0%}<br>"
+            hover += f"Priority: {data.get('priority', 'medium')}"
+            query_hover.append(hover)
+            
+            # Size based on priority
+            priority_sizes = {'high': 25, 'medium': 20, 'low': 15}
+            query_sizes.append(priority_sizes.get(data.get('priority', 'medium'), 20))
+    
+    if query_x:
+        query_trace = go.Scatter(
+            x=query_x, y=query_y,
+            mode='markers',
+            marker=dict(
+                size=query_sizes,
+                color=query_colors,
+                colorscale='Viridis',
+                showscale=True,
+                colorbar=dict(
+                    title="Score",
+                    thickness=15,
+                    len=0.7,
+                    x=1.02
+                ),
+                line=dict(color='white', width=1)
+            ),
+            hovertext=query_hover,
+            hoverinfo='text',
+            hoverlabel=dict(bgcolor='white'),
+            name='Queries'
+        )
+        node_traces.append(query_trace)
+    
+    # Create figure
+    fig = go.Figure(data=[edge_trace] + node_traces)
+    
+    fig.update_layout(
+        title={
+            'text': 'Query Network Graph',
+            'x': 0.5,
+            'xanchor': 'center',
+            'font': {'size': 24, 'family': 'Inter, system-ui, sans-serif'}
+        },
+        showlegend=False,
+        hovermode='closest',
+        margin=dict(b=20, l=5, r=5, t=60),
+        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        height=700,
+        font=dict(family="Inter, system-ui, sans-serif")
     )
     
     return fig
@@ -818,11 +1055,20 @@ def analyze_content(content, queries):
     
     return analysis_results
 
-def generate_pdf_report(queries, original_query, personalization_data=None, analysis_results=None):
-    """Generate a PDF report of the query analysis"""
+def generate_pdf_report(queries, original_query, personalization_data=None, analysis_results=None, include_viz=False):
+    """Generate a PDF report of the query analysis with optional visualizations"""
     if not REPORTLAB_AVAILABLE:
         st.error("PDF generation requires reportlab. Install with: pip install reportlab")
         return None
+    
+    from reportlab.lib.pagesizes import letter, A4
+    from reportlab.lib import colors
+    from reportlab.lib.units import inch
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image, PageBreak, KeepTogether
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT
+    import tempfile
+    import os
     
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter if pdf_size == "Letter" else A4)
@@ -853,6 +1099,28 @@ def generate_pdf_report(queries, original_query, personalization_data=None, anal
             story.append(Paragraph(f"• {key.title()}: {value}", styles['Normal']))
         story.append(Spacer(1, 20))
     
+    # Add visualization if requested and available
+    if include_viz and include_visualizations:
+        try:
+            # Create treemap visualization
+            viz_fig = create_hierarchical_visualization(queries, original_query, analysis_results)
+            
+            # Convert to image
+            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp_file:
+                viz_fig.write_image(tmp_file.name, width=1200, height=800, scale=2)
+                
+                # Add to PDF
+                story.append(Paragraph("<b>Query Hierarchy Visualization</b>", styles['Heading2']))
+                img = Image(tmp_file.name, width=6*inch, height=4*inch)
+                story.append(KeepTogether([img, Spacer(1, 20)]))
+                
+            # Clean up temp file
+            os.unlink(tmp_file.name)
+                
+        except Exception as e:
+            # If visualization fails, continue without it
+            pass
+    
     # Query Distribution
     type_counts = {}
     for q in queries:
@@ -866,15 +1134,15 @@ def generate_pdf_report(queries, original_query, personalization_data=None, anal
         percentage = f"{(count/len(queries)*100):.1f}%"
         dist_data.append([type_info['name'], str(count), percentage])
     
-    dist_table = Table(dist_data)
+    dist_table = Table(dist_data, colWidths=[3*inch, 1.5*inch, 1.5*inch])
     dist_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#FF6B6B')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, 0), 14),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#F0F0F0')),
         ('GRID', (0, 0), (-1, -1), 1, colors.black)
     ]))
     
@@ -883,6 +1151,7 @@ def generate_pdf_report(queries, original_query, personalization_data=None, anal
     story.append(Spacer(1, 20))
     
     # Generated Queries
+    story.append(PageBreak())
     story.append(Paragraph("<b>Generated Queries</b>", styles['Heading2']))
     
     # Group by type
@@ -900,7 +1169,7 @@ def generate_pdf_report(queries, original_query, personalization_data=None, anal
         for q in type_queries:
             story.append(Paragraph(f"• {q['query']}", styles['Normal']))
             story.append(Paragraph(f"  <i>Intent: {q.get('intent', 'N/A')}</i>", styles['Normal']))
-            story.append(Paragraph(f"  <i>Confidence: {q.get('confidence', 0):.0%}</i>", styles['Normal']))
+            story.append(Paragraph(f"  <i>Confidence: {q.get('confidence', 0):.0%} | Priority: {q.get('priority', 'medium')}</i>", styles['Normal']))
             story.append(Spacer(1, 10))
     
     # Content Analysis Results
@@ -908,26 +1177,61 @@ def generate_pdf_report(queries, original_query, personalization_data=None, anal
         story.append(PageBreak())
         story.append(Paragraph("<b>Content Analysis Results</b>", styles['Heading2']))
         
+        # Summary stats
+        high_matches = len([r for r in analysis_results if r['match_score'] > 0.7])
+        medium_matches = len([r for r in analysis_results if 0.3 < r['match_score'] <= 0.7])
+        low_matches = len([r for r in analysis_results if r['match_score'] <= 0.3])
+        
+        summary_data = [
+            ['Match Level', 'Count', 'Percentage'],
+            ['High (>70%)', str(high_matches), f"{(high_matches/len(analysis_results)*100):.1f}%"],
+            ['Medium (30-70%)', str(medium_matches), f"{(medium_matches/len(analysis_results)*100):.1f}%"],
+            ['Low (<30%)', str(low_matches), f"{(low_matches/len(analysis_results)*100):.1f}%"]
+        ]
+        
+        summary_table = Table(summary_data, colWidths=[2.5*inch, 1.5*inch, 1.5*inch])
+        summary_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#45B7D1')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#F5F5F5'))
+        ]))
+        
+        story.append(summary_table)
+        story.append(Spacer(1, 20))
+        
         # Top matches
-        top_matches = [r for r in analysis_results if r['match_score'] > 0.3][:10]
+        story.append(Paragraph("<b>Top 10 Matching Queries</b>", styles['Heading3']))
+        top_matches = analysis_results[:10]
         
         if top_matches:
-            match_data = [['Query', 'Match Score', 'Type']]
+            match_data = [['Query', 'Match Score', 'Type', 'Keywords']]
             for match in top_matches:
                 score_str = f"{match['match_score']:.0%}"
+                keywords = ', '.join(match.get('matched_words', [])[:5])
+                if len(match.get('matched_words', [])) > 5:
+                    keywords += '...'
+                    
                 match_data.append([
-                    match['query'][:50] + "...",
+                    match['query'][:60] + ("..." if len(match['query']) > 60 else ""),
                     score_str,
-                    QUERY_TYPES.get(match['type'], {}).get('name', match['type'])
+                    QUERY_TYPES.get(match['type'], {}).get('name', match['type']),
+                    keywords or 'None'
                 ])
             
-            match_table = Table(match_data)
+            match_table = Table(match_data, colWidths=[3*inch, 1*inch, 1.5*inch, 1.5*inch])
             match_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4ECDC4')),
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('ALIGN', (1, 0), (1, -1), 'CENTER'),
                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('GRID', (0, 0), (-1, -1), 1, colors.black)
+                ('FONTSIZE', (0, 0), (-1, -1), 10),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#FAFAFA')),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor('#FAFAFA'), colors.HexColor('#F0F0F0')])
             ]))
             
             story.append(match_table)
@@ -1063,7 +1367,8 @@ with tabs[1]:  # Results Tab
                     st.session_state.last_results, 
                     user_query,
                     personalization_data,
-                    st.session_state.content_analysis
+                    st.session_state.content_analysis,
+                    include_viz=include_visualizations
                 )
                 if pdf_buffer:
                     st.download_button(
@@ -1155,15 +1460,16 @@ with tabs[2]:  # Content Analysis Tab
                         st.markdown(f"{type_info.get('icon', '❓')} {type_info.get('name', match['type'])}")
                 
                 # Export analysis
-                if st.button("📊 Export Analysis as CSV"):
-                    analysis_df = pd.DataFrame(analysis)
-                    csv = analysis_df.to_csv(index=False)
-                    st.download_button(
-                        "Download Analysis",
-                        data=csv,
-                        file_name=f"content_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                        mime="text/csv"
-                    )
+                st.markdown("---")
+                analysis_df = pd.DataFrame(analysis)
+                csv = analysis_df.to_csv(index=False)
+                st.download_button(
+                    "📊 Export Analysis as CSV",
+                    data=csv,
+                    file_name=f"content_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv",
+                    key="export_analysis_csv"
+                )
             else:
                 st.warning("Please enter content to analyze")
     else:
@@ -1177,7 +1483,7 @@ with tabs[3]:  # Mind Map Tab
         # Visualization type selector
         viz_type = st.radio(
             "Visualization Type",
-            ["Treemap", "Sunburst"],
+            ["Treemap", "Sunburst", "Network Graph"],
             horizontal=True,
             help="Choose your preferred visualization style"
         )
@@ -1197,8 +1503,14 @@ with tabs[3]:  # Mind Map Tab
                 user_query,
                 st.session_state.content_analysis if include_match_scores else None
             )
-        else:  # Sunburst
+        elif viz_type == "Sunburst":
             viz_fig = create_sunburst_visualization(
+                st.session_state.last_results,
+                user_query,
+                st.session_state.content_analysis if include_match_scores else None
+            )
+        else:  # Network Graph
+            viz_fig = create_network_visualization(
                 st.session_state.last_results,
                 user_query,
                 st.session_state.content_analysis if include_match_scores else None
@@ -1226,13 +1538,16 @@ with tabs[3]:  # Mind Map Tab
         
         with col1:
             if st.button("📸 Save as PNG"):
-                img_bytes = viz_fig.to_image(format="png", width=1600, height=1200, scale=2)
-                st.download_button(
-                    "Download High-Res PNG",
-                    data=img_bytes,
-                    file_name=f"query_visualization_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png",
-                    mime="image/png"
-                )
+                try:
+                    img_bytes = viz_fig.to_image(format="png", width=1600, height=1200, scale=2)
+                    st.download_button(
+                        "Download High-Res PNG",
+                        data=img_bytes,
+                        file_name=f"query_visualization_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png",
+                        mime="image/png"
+                    )
+                except Exception as e:
+                    st.error("PNG export requires kaleido package. Install with: pip install kaleido")
         
         with col2:
             if st.button("📊 Save as Interactive HTML"):
@@ -1246,13 +1561,16 @@ with tabs[3]:  # Mind Map Tab
         
         with col3:
             if st.button("🎨 Save as SVG"):
-                svg_bytes = viz_fig.to_image(format="svg")
-                st.download_button(
-                    "Download SVG",
-                    data=svg_bytes,
-                    file_name=f"query_visualization_{datetime.now().strftime('%Y%m%d_%H%M%S')}.svg",
-                    mime="image/svg+xml"
-                )
+                try:
+                    svg_bytes = viz_fig.to_image(format="svg")
+                    st.download_button(
+                        "Download SVG",
+                        data=svg_bytes,
+                        file_name=f"query_visualization_{datetime.now().strftime('%Y%m%d_%H%M%S')}.svg",
+                        mime="image/svg+xml"
+                    )
+                except Exception as e:
+                    st.error("SVG export requires kaleido package. Install with: pip install kaleido")
     else:
         st.info("👆 Generate queries with visualization option enabled to see the hierarchical view.")
 
@@ -1277,7 +1595,7 @@ with tabs[5]:  # Resources Tab
     st.markdown("### 📖 Resources & Documentation")
     
     # Quick Start Guide
-    with st.expander("Quick Start Guide", expanded=True):
+    with st.expander("🚀 Quick Start Guide", expanded=True):
         st.markdown("""
         ### Getting Started with heLLiuM
         
@@ -1312,7 +1630,7 @@ with tabs[5]:  # Resources Tab
         """)
     
     # About the Technology
-    with st.expander("Understanding the Technology"):
+    with st.expander("🧠 Understanding the Technology"):
         st.markdown("""
         ### The Google Patent Explained
         
@@ -1320,9 +1638,9 @@ with tabs[5]:  # Resources Tab
         
         **Key Concepts:**
         
-        **Query Fan-Out**: Instead of processing just one query, the system generates many related queries to explore different aspects of your search intent.
+        📍 **Query Fan-Out**: Instead of processing just one query, the system generates many related queries to explore different aspects of your search intent.
         
-        **Query Types**:
+        🔄 **Query Types**:
         - **Reformulations**: Different ways to phrase the same question
         - **Related Queries**: Adjacent topics you might be interested in
         - **Implicit Queries**: Hidden questions within your main query
@@ -1330,15 +1648,15 @@ with tabs[5]:  # Resources Tab
         - **Entity Expansions**: Deep dives on specific things mentioned
         - **Personalized Queries**: Variations based on context
         
-        **Why This Matters**:
+        🎯 **Why This Matters**:
         - Better content coverage for SEO
         - Understanding user search behavior
         - Creating comprehensive content strategies
         - Identifying content gaps
         - Improving search relevance
         
-        **Real-World Application**: When you search for "best electric SUV", Google might internally generate queries like:
-        - "electric SUV comparison 2025"
+        💡 **Real-World Application**: When you search for "best electric SUV", Google might internally generate queries like:
+        - "electric SUV comparison 2024"
         - "Tesla Model Y vs competitors"
         - "electric SUV range anxiety"
         - "cost of owning electric SUV"
@@ -1352,31 +1670,32 @@ with tabs[5]:  # Resources Tab
         st.markdown("""
         ### Pro Tips for Power Users
         
-        **Visualization Features**
+        **🎨 Visualization Features**
         - Use Treemap view for hierarchical analysis
         - Switch to Sunburst for radial exploration
+        - Try Network Graph for relationship mapping
         - Colors indicate confidence or match scores
         - Click sections to zoom in (Sunburst)
         
-        **Content Analysis**
+        **📊 Content Analysis**
         - Match scores show keyword overlap
         - High matches (>70%) indicate well-covered topics
         - Low matches (<30%) reveal content gaps
         - Use this for content optimization
         
-        **Multi-Provider Strategy**
+        **🤖 Multi-Provider Strategy**
         - Gemini: Fast and cost-effective
         - GPT-4: Advanced reasoning
         - Claude: Nuanced understanding
         - Try different providers for different perspectives
         
-        **Export Strategies**
+        **📤 Export Strategies**
         - CSV: For spreadsheet analysis
         - PDF: For client reports
         - JSON: For programmatic use
         - HTML visualizations: For interactive sharing
         
-        **Performance Tips**
+        **⚡ Performance Tips**
         - Lower temperature for consistent results
         - Higher temperature for creative variations
         - Adjust max tokens based on query complexity
@@ -1384,11 +1703,11 @@ with tabs[5]:  # Resources Tab
         """)
     
     # Credits and Attribution
-    with st.expander("👥 Credits & Attribution"):
+    with st.expander("👥 Credits & Attribution", expanded=True):
         st.markdown("""
-        ### heLLiuM Team
+        ### 🏆 heLLiuM Team
         
-        #### **Version 3.0 Developer**
+        #### 🚀 **Version 3.0 Developer**
         **Tyler Einberger** - Enhanced and expanded Qforia into heLLiuM with advanced features
         
         Connect with Tyler:
@@ -1397,7 +1716,7 @@ with tabs[5]:  # Resources Tab
         - 🏢 [Momentic Marketing](https://momenticmarketing.com/team/tyler-einberger)
         - 🏙️ [MKE DMC](https://www.mkedmc.org/people/tyler-einberger)
         
-        #### **Original Creator**
+        #### 🎨 **Original Creator**
         **Mike King** - Created Qforia 1.0, the foundation for this tool
         - 🔗 [Original Qforia](https://qforia.streamlit.app/)
         
@@ -1405,7 +1724,7 @@ with tabs[5]:  # Resources Tab
         
         ---
         
-        ### Version History
+        ### 📜 Version History
         - **v3.0** (Current - heLLiuM): Multi-provider support, visualizations, content analysis, PDF reports
         - **v2.0**: Enhanced UI, confidence scoring, session history
         - **v1.0**: Original by Mike King - Core query generation concept
