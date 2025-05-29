@@ -1086,7 +1086,7 @@ with tabs[2]:  # Content Analysis Tab
                             st.caption("No keyword matches")
                         
                         # Show query keywords for debugging
-                        with st.expander("Debug Info", expanded=False):
+                        with st.expander("matching info", expanded=False):
                             st.caption(f"Query keywords: {', '.join(match.get('query_keywords', []))}")
                             st.caption(f"Matched: {match['matched_words']}")
                     
@@ -1436,7 +1436,7 @@ with tabs[5]:  # Resources Tab
     st.markdown("""
     <div style='text-align: center; padding: 20px;'>
         <h4>🔮 HeLLiuM - LLM Query Fan Out Simulator</h4>
-        <p>Built with ❤️ by Tyler Einberger, based on original work by Mike King</p>
+        <p>Built with vibes (Claude) by Tyler Einberger, based on original work by Mike King</p>
         <p>Powered by Google Gemini, OpenAI, and Anthropic Claude</p>
         <br>
         <p><em>"Multiplied intelligence for search understanding."</em></p>
