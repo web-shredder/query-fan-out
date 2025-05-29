@@ -93,6 +93,9 @@ if 'last_results' not in st.session_state:
 if 'content_analysis' not in st.session_state:
     st.session_state.content_analysis = None
 
+# ADD SNIPPET 1 HERE
+personalization_data = {}
+
 # Sidebar configuration
 st.sidebar.header("🔧 Configuration")
 
