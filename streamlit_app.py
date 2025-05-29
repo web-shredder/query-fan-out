@@ -44,7 +44,7 @@ except ImportError:
     REPORTLAB_AVAILABLE = False
 
 # App config
-st.set_page_config(page_title="Qforia Pro", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Qforia 2.0 - Now with Content Analysis", layout="wide", initial_sidebar_state="expanded")
 
 # Custom CSS
 st.markdown("""
@@ -78,7 +78,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🚀 Qforia Pro: Multi-Provider AI Query Intelligence System")
+st.title("🔥 Qforia 2.0: LLM Query Intelligence System")
 st.markdown("*Powered by Gemini, OpenAI, and Claude with Advanced Analytics*")
 
 # Initialize session state
