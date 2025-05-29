@@ -224,18 +224,19 @@ with st.sidebar.expander("🤖 AI Provider Configuration", expanded=True):
     
     temperature = st.slider("Temperature", 0.0, 1.0, 0.7, 0.1)
     max_tokens = st.number_input("Max Tokens", 100, 4000, 2000)
+
+# Model availability note - separate sidebar expander
+with st.sidebar.expander("ℹ️ Model Availability Notes"):
+    st.markdown("""
+    **Important Notes:**
+    - Some models may require specific API access or waitlist approval
+    - Audio/Image generation models won't work for text query generation
+    - Embedding models are for similarity, not generation
+    - Newer models (o3, o4, Claude 4) may have limited availability
+    - Check your API tier for model access
+    """)
     
-    # Model availability note
-    with st.expander("ℹ️ Model Availability Notes"):
-        st.markdown("""
-        **Important Notes:**
-        - Some models may require specific API access or waitlist approval
-        - Audio/Image generation models won't work for text query generation
-        - Embedding models are for similarity, not generation
-        - Newer models (o3, o4, Claude 4) may have limited availability
-        - Check your API tier for model access
-        """)
-        
+    if 'selected_provider' in locals():
         if selected_provider == "OpenAI":
             st.warning("Note: o3, o4, and GPT-4.1 models may require special access")
         elif selected_provider == "Google Gemini":
