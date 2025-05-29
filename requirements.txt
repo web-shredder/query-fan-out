@@ -1,1 +1,8 @@
-streamlit
+streamlit==1.29.0
+google-generativeai==0.3.2
+pandas==2.1.4
+protobuf==4.25.1
+google-ai-generativelanguage==0.4.0
+google-api-core==2.15.0
+google-auth==2.25.2
+tqdm==4.66.1
