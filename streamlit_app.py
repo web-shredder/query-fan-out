@@ -1234,7 +1234,7 @@ with st.expander("🔬 Advanced Features & Tips"):
 
 # Credits and Attribution
 with st.expander("👥 Credits & Attribution", expanded=True):
-   st.markdown("""
+    st.markdown("""
 ### 🏆 Core Team
 
 | Role | Name | Links |
@@ -1254,7 +1254,7 @@ with st.expander("👥 Credits & Attribution", expanded=True):
     
 # API Resources
 with st.expander("🔗 API Documentation & Resources"):
-     st.markdown("""
+    st.markdown("""
 ### 🔑 Grab Your API Keys
 
 | Provider | Get Key | Docs | Pricing |
