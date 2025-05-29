@@ -44,7 +44,7 @@ except ImportError:
     REPORTLAB_AVAILABLE = False
 
 # App config
-st.set_page_config(page_title="Qforia Pro", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="heLLiuM 3.0", layout="wide", initial_sidebar_state="expanded")
 
 # Custom CSS
 st.markdown("""
@@ -78,7 +78,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🚀 Qforia Pro: Multi-Provider AI Query Intelligence System")
+st.title("heLLiuM 3.0")
 st.markdown("*Powered by Gemini, OpenAI, and Claude with Advanced Analytics*")
 
 # Initialize session state
@@ -92,9 +92,6 @@ if 'last_results' not in st.session_state:
     st.session_state.last_results = []
 if 'content_analysis' not in st.session_state:
     st.session_state.content_analysis = None
-
-# ADD SNIPPET 1 HERE
-personalization_data = {}
 
 # Sidebar configuration
 st.sidebar.header("🔧 Configuration")
@@ -228,63 +225,7 @@ with st.sidebar.expander("🤖 AI Provider Configuration", expanded=True):
     
     temperature = st.slider("Temperature", 0.0, 1.0, 0.7, 0.1)
     max_tokens = st.number_input("Max Tokens", 100, 4000, 2000)
- # Personalization settings
-    st.markdown("### 🎯 Personalization (Optional)")
-    with st.expander("👤 User Context", expanded=False):
-        st.markdown("*Add context to generate more targeted queries*")
-        
-        # Demographics
-        st.markdown("**Demographics**")
-        col1, col2 = st.columns(2)
-        with col1:
-            age = st.text_input("Age/Age Range", placeholder="e.g., 25-34", key="age_input")
-            gender = st.selectbox("Gender", ["Not specified", "Male", "Female", "Non-binary", "Other"], key="gender_input")
-            location = st.text_input("Location", placeholder="e.g., New York, USA", key="location_input")
-        
-        with col2:
-            income_range = st.text_input("Income Range", placeholder="e.g., $50k-$75k", key="income_input")
-            occupation = st.text_input("Job/Industry", placeholder="e.g., Marketing Manager", key="occupation_input")
-            education = st.selectbox("Education", ["Not specified", "High School", "Bachelor's", "Master's", "PhD", "Trade School"], key="education_input")
-        
-        # Interests & Preferences
-        st.markdown("**Interests & Preferences**")
-        interests = st.text_area("Interests/Hobbies", placeholder="e.g., hiking, cooking, tech gadgets", height=60, key="interests_input")
-        favorite_brands = st.text_input("Favorite Brands", placeholder="e.g., Apple, Nike, Tesla", key="brands_input")
-        
-        # Behavioral Context
-        st.markdown("**Behavioral Context**")
-        col3, col4 = st.columns(2)
-        with col3:
-            budget = st.text_input("Budget Range", placeholder="e.g., $100-$500", key="budget_input")
-            buying_stage = st.selectbox("Buying Stage", ["Not specified", "Research", "Comparison", "Ready to buy", "Just browsing"], key="buying_stage_input")
-        
-        with col4:
-            device_type = st.selectbox("Primary Device", ["Not specified", "Mobile", "Desktop", "Tablet", "Smart TV"], key="device_input")
-            time_of_day = st.selectbox("Typical Search Time", ["Not specified", "Morning", "Afternoon", "Evening", "Late night"], key="time_input")
-        
-        # Custom Context
-        st.markdown("**Additional Context**")
-        custom_context = st.text_area("Other Context", placeholder="Any other relevant information about the user or use case", height=60, key="custom_input")
-        
-        # Compile personalization data
-        personalization_data = {
-            'age': age if age else None,
-            'gender': gender if gender != "Not specified" else None,
-            'location': location if location else None,
-            'income': income_range if income_range else None,
-            'occupation': occupation if occupation else None,
-            'education': education if education != "Not specified" else None,
-            'interests': interests if interests else None,
-            'brands': favorite_brands if favorite_brands else None,
-            'budget': budget if budget else None,
-            'buying_stage': buying_stage if buying_stage != "Not specified" else None,
-            'device': device_type if device_type != "Not specified" else None,
-            'time': time_of_day if time_of_day != "Not specified" else None,
-            'custom': custom_context if custom_context else None
-        }
-        
-        # Remove None values
-        personalization_data = {k: v for k, v in personalization_data.items() if v is not None}
+
 # Model availability note - separate sidebar expander
 with st.sidebar.expander("ℹ️ Model Availability Notes"):
     st.markdown("""
@@ -991,18 +932,7 @@ with tabs[0]:  # Generate Tab
                 st.warning("⚠️ Please enter a query.")
             else:
                 # Generate queries
-                 results = generate_queries(
-                        user_query, 
-                        api_key, 
-                        model, 
-                        temperature, 
-                        max_tokens, 
-                        num_queries,
-                        search_mode,
-                        selected_types if filter_types else None,
-                        provider,
-                        personalization_data  # Add this parameter
-                    )
+                results = generate_queries(user_query, mode, selected_provider, selected_model)
                 
                 if results:
                     st.session_state.last_results = results
@@ -1016,11 +946,6 @@ with tabs[0]:  # Generate Tab
                     })
                     
                     st.success(f"✅ Generated {len(results)} queries!")
-                    # Show personalization indicator
-                    if personalization_data:
-                        with st.expander("Applied Personalization Context"):
-                            for key, value in personalization_data.items():
-                                st.write(f"**{key.title()}**: {value}")
                     st.balloons()
 
 with tabs[1]:  # Results Tab
@@ -1083,11 +1008,7 @@ with tabs[1]:  # Results Tab
         
         with col2:
             if "PDF Report" in export_format and REPORTLAB_AVAILABLE:
-                pdf_buffer = generate_pdf_report(
-            st.session_state.last_results, 
-            user_query,
-            personalization_data  # Add this parameter
-        )
+                pdf_buffer = generate_pdf_report(st.session_state.last_results, user_query)
                 if pdf_buffer:
                     st.download_button(
                         "📄 Download PDF Report",
@@ -1165,7 +1086,7 @@ with tabs[2]:  # Content Analysis Tab
                             st.caption("No keyword matches")
                         
                         # Show query keywords for debugging
-                        with st.expander("Debug Info", expanded=False):
+                        with st.expander("matching info", expanded=False):
                             st.caption(f"Query keywords: {', '.join(match.get('query_keywords', []))}")
                             st.caption(f"Matched: {match['matched_words']}")
                     
@@ -1302,7 +1223,7 @@ with tabs[5]:  # Resources Tab
     # Quick Start Guide
     with st.expander("🚀 Quick Start Guide", expanded=True):
         st.markdown("""
-        ### Getting Started with heLLiuM
+        ### Getting Started with HeLLiuM
         
         **1. Set Up Your API Key**
         - Choose your AI provider (Gemini, OpenAI, or Claude)
@@ -1339,7 +1260,7 @@ with tabs[5]:  # Resources Tab
         st.markdown("""
         ### The Google Patent Explained
         
-        heLLiuM is inspired by Google's "Search with Stateful Chat" patent, which describes how modern search engines generate multiple query variations to better understand user intent.
+        HeLLiuM is inspired by Google's "Search with Stateful Chat" patent, which describes how modern search engines generate multiple query variations to better understand user intent.
         
         **Key Concepts:**
         
@@ -1367,7 +1288,7 @@ with tabs[5]:  # Resources Tab
         - "cost of owning electric SUV"
         - And dozens more...
         
-        heLLiuM gives you access to that same powerful capability!
+        HeLLiuM gives you access to that same powerful capability!
         """)
     
     # Advanced Features
@@ -1409,10 +1330,10 @@ with tabs[5]:  # Resources Tab
     # Credits and Attribution
     with st.expander("👥 Credits & Attribution", expanded=True):
         st.markdown("""
-        ### 🏆 heLLiuM Team
+        ### 🏆 HeLLiuM Team
         
         #### 🚀 **Version 3.0 Developer**
-        **Tyler Einberger** - Enhanced and expanded Qforia into heLLiuM with advanced features
+        **Tyler Einberger** - Enhanced and expanded Qforia into HeLLiuM with advanced features
         
         Connect with Tyler:
         - 💼 [LinkedIn](https://www.linkedin.com/in/tyler-einberger)
@@ -1429,7 +1350,7 @@ with tabs[5]:  # Resources Tab
         ---
         
         ### 📜 Version History
-        - **v3.0** (Current - heLLiuM): Multi-provider support, visualizations, content analysis, PDF reports
+        - **v3.0** (Current - HeLLiuM): Multi-provider support, visualizations, content analysis, PDF reports
         - **v2.0**: Enhanced UI, confidence scoring, session history
         - **v1.0**: Original by Mike King - Core query generation concept
         """)
@@ -1475,7 +1396,7 @@ with tabs[5]:  # Resources Tab
     # Use Cases
     with st.expander("💡 Use Cases & Examples"):
         st.markdown("""
-        ### How Different Teams Use heLLiuM
+        ### How Different Teams Use Qforia Pro
         
         **SEO Professionals**
         - Keyword research and expansion
@@ -1509,25 +1430,13 @@ with tabs[5]:  # Resources Tab
         5. Create content plan based on gaps
         6. Export visualization for team presentation
         """)
-    
-    # Footer
-    st.markdown("---")
-    st.markdown("""
-    <div style='text-align: center; padding: 20px;'>
-        <h4>🔮 heLLiuM - LLM Query Fan Out Simulator</h4>
-        <p>Built with ❤️ by Tyler Einberger, based on original work by Mike King</p>
-        <p>Powered by Google Gemini, OpenAI, and Anthropic Claude</p>
-        <br>
-        <p><em>"Multiplied intelligence for search understanding."</em></p>
-    </div>
-    """, unsafe_allow_html=True)
 
 # Footer
 st.markdown("---")
 st.markdown("""
-<div style='text-align: center; color: #666;'>
-    <p>heLLiuM v3.0 | LLM Query Fan Out Simulator</p>
-    <p>Created by <a href='https://www.linkedin.com/in/tyler-einberger' target='_blank'>Tyler Einberger</a> | 
+<div style='text-align: center; color: #000;'>
+    <p>🔮 HeLLiuM - LLM Query Fan Out Simulator</p>
+    <p>Built with vibes (Claude) by <a href='https://www.linkedin.com/in/tyler-einberger' target='_blank'>Tyler Einberger</a> | 
     Based on <a href='https://qforia.streamlit.app/' target='_blank'>original</a> by Mike King</p>
 </div>
 """, unsafe_allow_html=True)
