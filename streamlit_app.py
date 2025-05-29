@@ -1139,181 +1139,162 @@ with tabs[5]:  # Resources Tab
     
    # Quick Start Guide
 with st.expander("🚀 Quick Start Guide", expanded=True):
-    st.markdown("""
-### Getting Started with [he]LL[iu]M
+   st.markdown("""
+### 🏁 Getting Started with **Qforia Pro**
 
-**Set your API key**  
-Choose Gemini, OpenAI, or Claude. Drop the key in the sidebar. Pick a model.
+1. **Set Up Your API Key**
+   • Pick a provider → *Gemini · OpenAI · Claude*  
+   • Paste your key in the sidebar  
+   • Choose a model that fits your task
 
-**Define your search**  
-Type the main query. Pick a mode:  
-- **AI Overview** – 12–20 quick probes  
-- **AI Mode (Complex)** – 20–35 broader probes  
-- **Research Mode** – 35–50 deep dives  
-- **Comparative Analysis** – side-by-side checks  
-- **Multi-Perspective** – varied viewpoints
+2. **Configure Your Query**
+   • Type your **head query**  
+   • Select a *Search Mode*  
+     | Mode | # Sub-Queries | Best For |
+     |------|--------------|----------|
+     | **AI Overview** | 12-20 | Quick scans |
+     | **AI Mode (Complex)** | 20-35 | Deep dives |
+     | **Research** | 35-50 | Exhaustive coverage |
+     | **Comparative** | — | Side-by-side choices |
+     | **Multi-Perspective** | — | Diverse viewpoints |
 
-**Generate variations**  
-Hit **Generate Queries**. Scan the Results tab. Filter by type, priority, or confidence.
+3. **Generate Queries**
+   • Hit **Generate** ▶️  
+   • Inspect results in **Results** tab  
+   • Filter by *type · priority · confidence*
 
-**Check your content (optional)**  
-Open **Content Analysis**. Paste text. See match scores and gaps. Export if needed.
+4. **(Optional) Analyze Your Content**
+   • Paste draft text in **Content Analysis**  
+   • See alignment scores & gaps  
+   • Export findings to share
 
-**Visualize and export**  
-Open the **Visualize** tab. Use Treemap or Sunburst to inspect coverage. Export CSV, PDF, JSON, or images.
+5. **Visualize & Export**
+   • Switch views → Treemap · Sunburst · Table  
+   • Download raw data (CSV · JSON) or a PDF report  
+   • Save graphics as PNG/SVG
 """)
 
 # About the Technology
 with st.expander("🧠 Understanding the Technology"):
     st.markdown("""
-### How Google fans out a search
+### 🔍 Inside Google’s **“Search with Stateful Chat”** Patent
 
-Modern search uses the idea of **query fan-out**.  
-*Definition:* The engine spins your single question into many related ones to read intent better.  
-*Why it matters:* Your content wins when it answers those hidden angles.
+Google’s 2024 patent (US 2024/0289407 A1) details how it *fans-out* a single search into dozens of machine-generated variants to grasp intent.
 
-**Main query types**
+| Concept | What It Means | Why It Helps |
+|---------|---------------|--------------|
+| **Query Fan-Out** | Spawn many sibling queries around your prompt | Captures nuance & hidden needs |
+| **Reformulations** | Same ask, different phrasing | Matches varied user language |
+| **Related Queries** | Tangential but relevant asks | Surfaces adjacent topics |
+| **Implicit Intents** | Questions you didn’t verbalize | Anticipates follow-ups |
+| **Comparative Angles** | “X vs Y” frames | Aids decision making |
+| **Entity Drills** | Deep dives on nouns in the query | Builds expertise signals |
+| **Personalized Splits** | Adds context like location or recency | Boosts relevance |
 
-| Type | One-line meaning | Why it matters |
-| ---- | ---------------- | -------------- |
-| Reformulation | Same ask, new words | Captures synonyms |
-| Related | Neighbor topics | Broadens coverage |
-| Implicit | Hidden follow-ups | Fills blind spots |
-| Comparative | A vs. B checks | Supports buyer choices |
-| Entity expansion | Deep dive on a thing | Gains authority |
-| Personalized | Adds context | Meets specific needs |
+**Real-World Example** – Head query **“best electric SUV”** → the engine may also ask:  
+• “electric SUV cost of ownership 2025”  
+• “Tesla Model Y vs Ford Mach-E range”  
+• “family-friendly electric SUV safety ratings”  
 
-*Real example* – A search for **best electric SUV** can fan out to:  
-- “electric SUV comparison 2025”  
-- “Tesla Model Y vs Hyundai Ioniq 5”  
-- “electric SUV charging cost”  
-- “range anxiety tips”  
-The tool gives you that same reach.
+This tool exposes that same brainstorming engine to you.
 """)
 
 # Advanced Features
 with st.expander("🔬 Advanced Features & Tips"):
     st.markdown("""
-### Power moves
+### 💡 Power-User Playbook
 
-**Visualize**  
-Treemap shows hierarchy. Sunburst shows depth. Click a slice to zoom. Color tracks confidence.
+**📈 Visual Explorers**  
+• **Treemap** → size = query weight, shade = confidence  
+• **Sunburst** → click rings to zoom; center = head topic
 
-**Content scores**  
-Match ≥70 % means you cover the idea well. Match ≤30 % flags a gap.
+**📝 Content Analysis Signals**  
+• **Match Score ≥ 70 %** → well-covered  
+• **Match Score ≤ 30 %** → content gap → opportunity  
+• Hover any bar to view exact keyword overlap
 
-**Mix providers**  
-- **Gemini** – fast, budget-friendly  
-- **GPT-4** – sharp reasoning  
-- **Claude** – subtle language  
-Swap models for richer angles.
+**🤖 Multi-Provider Tactics**  
+| Provider | Sweet Spot |
+|----------|------------|
+| **Gemini** | Speed & cost |
+| **GPT-4(o)** | Structured reasoning |
+| **Claude** | Long-form nuance |
 
-**Export**  
-CSV for sheets, PDF for clients, JSON for your code, HTML charts for shareable views.
+**↗️ Export Wisely**  
+• **CSV** → spreadsheets & BI tools  
+• **PDF** → client decks  
+• **JSON** → pipelines & no-code automations  
+• **HTML** → interactive embeds
 
-**Tune speed**  
-Lower *temperature* for steady output. Raise it for creative leaps. Trim *max tokens* on simple asks.
+**⚙️ Performance Knobs**  
+• **Temperature ↓** → deterministic output  
+• **Temperature ↑** → creative breadth  
+• Raise **max tokens** for complex topics
 """)
 
 # Credits and Attribution
 with st.expander("👥 Credits & Attribution", expanded=True):
-    st.markdown("""
-### About this tool
+   st.markdown("""
+### 🏆 Core Team
 
-**Version 3.0** – Expanded by **Tyler Einberger**
+| Role | Name | Links |
+|------|------|-------|
+| **Lead Dev (v3.0)** | *Tyler Einberger* | [LinkedIn](https://www.linkedin.com/in/tyler-einberger) · [Site](https://tylereinberger.com) · [Momentic](https://momenticmarketing.com/team/tyler-einberger) |
+| **Original Creator (v1.0)** | *Mike King* | [Qforia 1.0](https://qforia.streamlit.app/) |
 
-Connect  
-- [LinkedIn](https://www.linkedin.com/in/tyler-einberger)  
-- [Website](https://www.tylereinberger.com/)  
-- [Momentic](https://momenticmarketing.com/)  
-- [MKE DMC](https://www.mkedmc.org/)
-
-**Original creator** – **Mike King** built Qforia 1.0  
-[Original app](https://qforia.streamlit.app/)
+> 🙏 Shout-out to Mike for open-sourcing the OG tool.
 
 ---
 
-### Version history
-- **3.0** – Multi-provider support, visualizations, content analysis, PDF reports  
-- **2.0** – New UI, confidence scores, session history  
-- **1.0** – Core query generation concept from Mike King
+### 📜 Version Timeline
+* **v3.0** – Multi-provider, visual dashboards, PDF export  
+* **v2.0** – Confidence scoring, session history, UI revamp  
+* **v1.0** – Core query generation concept
 """)
+
     
     # API Resources
     with st.expander("🔗 API Documentation & Resources"):
         st.markdown("""
-        ### Getting API Keys
-        
-        **Google Gemini**
-        - 🔗 [Get API Key](https://makersuite.google.com/app/apikey)
-        - 📚 [Documentation](https://ai.google.dev/docs)
-        - 💰 Free tier available
-        
-        **OpenAI**
-        - 🔗 [Get API Key](https://platform.openai.com/api-keys)
-        - 📚 [Documentation](https://platform.openai.com/docs)
-        - 💰 Pay-as-you-go pricing
-        
-        **Anthropic Claude**
-        - 🔗 [Get API Key](https://console.anthropic.com/)
-        - 📚 [Documentation](https://docs.anthropic.com/)
-        - 💰 Usage-based pricing
-        
-        ### Model Recommendations
-        
-        **For Speed & Cost**: 
-        - Gemini 1.5 Flash
-        - GPT-4o mini
-        - Claude Haiku
-        
-        **For Quality**:
-        - Gemini 2.5 Pro
-        - GPT-4
-        - Claude Opus/Sonnet
-        
-        **For Balance**:
-        - Gemini 2.0 Flash
-        - GPT-4o
-        - Claude Sonnet 3.5
-        """)
-    
+### 🔑 Grab Your API Keys
+
+| Provider | Get Key | Docs | Pricing |
+|----------|---------|------|---------|
+| **Gemini** | [Create Key](https://makersuite.google.com/app/apikey) | [Docs](https://ai.google.dev/docs) | Free tier |
+| **OpenAI** | [Create Key](https://platform.openai.com/api-keys) | [Docs](https://platform.openai.com/docs) | Pay-go |
+| **Claude** | [Create Key](https://console.anthropic.com/) | [Docs](https://docs.anthropic.com/) | Usage-based |
+
+**Model Cheatsheet**
+
+| Goal | Fast & Cheap | Balanced | Premium |
+|------|--------------|----------|---------|
+| **Speed/Cost** | Gemini 1.5 Flash | — | — |
+| **Balance** | GPT-4o mini | GPT-4o | Claude Sonnet 3.5 |
+| **Quality** | — | Gemini 2.0 Flash | GPT-4 · Claude Opus |
+""")
+
     # Use Cases
     with st.expander("💡 Use Cases & Examples"):
         st.markdown("""
-        ### How Different Teams Use Qforia Pro
-        
-        **SEO**
-        - Keyword research and expansion
-        - Content gap analysis
-        - Search intent understanding
-        - Competitor content planning
-        
-        **Content**
-        - Blog topic ideation
-        - Content cluster planning
-        - FAQ generation
-        - User question discovery
-        
-        **Product Teams**
-        - Feature request analysis
-        - User need exploration
-        - Documentation planning
-        - Support content creation
-        
-        **Researchers**
-        - Literature review queries
-        - Research question refinement
-        - Topic exploration
-        - Grant proposal keywords
-        
-        **Example Workflow**:
-        1. Start with: "sustainable packaging solutions"
-        2. Generate 35 queries in Research Mode
-        3. Analyze existing content against queries
-        4. Identify gaps where match scores are low
-        5. Create content plan based on gaps
-        6. Export visualization for team presentation
-        """)
+### Leverage the tool
+
+| Team | Typical Wins |
+|------|--------------|
+| **SEO** | Keyword expansion · Intent mapping · Gap audits |
+| **Content Marketing** | Cluster ideation · FAQ mining · Editorial planning |
+| **Product** | Feature discovery · Docs outlines · Support KB |
+| **Research** | Literature scans · Funding keywords · Topic refinement |
+
+**Sample Workflow**
+
+1. **Head Query:** “sustainable packaging solutions”  
+2. Mode → **Research** (≈ 35 queries)  
+3. Review **Results** → flag high-priority intents  
+4. **Content Analysis** → detect gaps (< 30 % match)  
+5. Draft articles/videos around those gaps  
+6. Export **Sunburst** chart for your strategy deck
+""")
+
     
     # Footer
     st.markdown("---")
