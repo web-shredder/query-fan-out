@@ -1083,7 +1083,11 @@ with tabs[1]:  # Results Tab
         
         with col2:
             if "PDF Report" in export_format and REPORTLAB_AVAILABLE:
-                pdf_buffer = generate_pdf_report(st.session_state.last_results, user_query)
+                pdf_buffer = generate_pdf_report(
+            st.session_state.last_results, 
+            user_query,
+            personalization_data  # Add this parameter
+        )
                 if pdf_buffer:
                     st.download_button(
                         "📄 Download PDF Report",
