@@ -1251,11 +1251,10 @@ with st.expander("👥 Credits & Attribution", expanded=True):
 * **v2.0** – Confidence scoring, session history, UI revamp  
 * **v1.0** – Core query generation concept
 """)
-
     
-    # API Resources
-    with st.expander("🔗 API Documentation & Resources"):
-        st.markdown("""
+# API Resources
+with st.expander("🔗 API Documentation & Resources"):
+     st.markdown("""
 ### 🔑 Grab Your API Keys
 
 | Provider | Get Key | Docs | Pricing |
