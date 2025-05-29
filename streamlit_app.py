@@ -228,7 +228,63 @@ with st.sidebar.expander("🤖 AI Provider Configuration", expanded=True):
     
     temperature = st.slider("Temperature", 0.0, 1.0, 0.7, 0.1)
     max_tokens = st.number_input("Max Tokens", 100, 4000, 2000)
-
+ # Personalization settings
+    st.markdown("### 🎯 Personalization (Optional)")
+    with st.expander("👤 User Context", expanded=False):
+        st.markdown("*Add context to generate more targeted queries*")
+        
+        # Demographics
+        st.markdown("**Demographics**")
+        col1, col2 = st.columns(2)
+        with col1:
+            age = st.text_input("Age/Age Range", placeholder="e.g., 25-34", key="age_input")
+            gender = st.selectbox("Gender", ["Not specified", "Male", "Female", "Non-binary", "Other"], key="gender_input")
+            location = st.text_input("Location", placeholder="e.g., New York, USA", key="location_input")
+        
+        with col2:
+            income_range = st.text_input("Income Range", placeholder="e.g., $50k-$75k", key="income_input")
+            occupation = st.text_input("Job/Industry", placeholder="e.g., Marketing Manager", key="occupation_input")
+            education = st.selectbox("Education", ["Not specified", "High School", "Bachelor's", "Master's", "PhD", "Trade School"], key="education_input")
+        
+        # Interests & Preferences
+        st.markdown("**Interests & Preferences**")
+        interests = st.text_area("Interests/Hobbies", placeholder="e.g., hiking, cooking, tech gadgets", height=60, key="interests_input")
+        favorite_brands = st.text_input("Favorite Brands", placeholder="e.g., Apple, Nike, Tesla", key="brands_input")
+        
+        # Behavioral Context
+        st.markdown("**Behavioral Context**")
+        col3, col4 = st.columns(2)
+        with col3:
+            budget = st.text_input("Budget Range", placeholder="e.g., $100-$500", key="budget_input")
+            buying_stage = st.selectbox("Buying Stage", ["Not specified", "Research", "Comparison", "Ready to buy", "Just browsing"], key="buying_stage_input")
+        
+        with col4:
+            device_type = st.selectbox("Primary Device", ["Not specified", "Mobile", "Desktop", "Tablet", "Smart TV"], key="device_input")
+            time_of_day = st.selectbox("Typical Search Time", ["Not specified", "Morning", "Afternoon", "Evening", "Late night"], key="time_input")
+        
+        # Custom Context
+        st.markdown("**Additional Context**")
+        custom_context = st.text_area("Other Context", placeholder="Any other relevant information about the user or use case", height=60, key="custom_input")
+        
+        # Compile personalization data
+        personalization_data = {
+            'age': age if age else None,
+            'gender': gender if gender != "Not specified" else None,
+            'location': location if location else None,
+            'income': income_range if income_range else None,
+            'occupation': occupation if occupation else None,
+            'education': education if education != "Not specified" else None,
+            'interests': interests if interests else None,
+            'brands': favorite_brands if favorite_brands else None,
+            'budget': budget if budget else None,
+            'buying_stage': buying_stage if buying_stage != "Not specified" else None,
+            'device': device_type if device_type != "Not specified" else None,
+            'time': time_of_day if time_of_day != "Not specified" else None,
+            'custom': custom_context if custom_context else None
+        }
+        
+        # Remove None values
+        personalization_data = {k: v for k, v in personalization_data.items() if v is not None}
 # Model availability note - separate sidebar expander
 with st.sidebar.expander("ℹ️ Model Availability Notes"):
     st.markdown("""
