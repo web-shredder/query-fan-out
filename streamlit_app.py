@@ -1075,195 +1075,216 @@ def generate_pdf_report(queries, original_query, personalization_data=None, anal
     story = []
     styles = getSampleStyleSheet()
     
-    # Title
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=24,
-        textColor=colors.HexColor('#FF6B6B'),
-        alignment=TA_CENTER
-    )
-    story.append(Paragraph("heLLiuM Query Analysis Report", title_style))
-    story.append(Spacer(1, 20))
+    # Keep track of temp files to clean up later
+    temp_files = []
     
-    # Original Query - escape special characters
-    safe_original_query = original_query.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-    story.append(Paragraph(f"<b>Original Query:</b> {safe_original_query}", styles['Normal']))
-    story.append(Paragraph(f"<b>Generated:</b> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", styles['Normal']))
-    story.append(Paragraph(f"<b>Total Queries Generated:</b> {len(queries)}", styles['Normal']))
-    story.append(Spacer(1, 20))
-    
-    # Personalization Context
-    if personalization_data:
-        story.append(Paragraph("<b>Personalization Context Applied:</b>", styles['Heading3']))
-        for key, value in personalization_data.items():
-            safe_value = str(value).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-            story.append(Paragraph(f"• {key.title()}: {safe_value}", styles['Normal']))
+    try:
+        # Title
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=24,
+            textColor=colors.HexColor('#FF6B6B'),
+            alignment=TA_CENTER
+        )
+        story.append(Paragraph("heLLiuM Query Analysis Report", title_style))
         story.append(Spacer(1, 20))
-    
-    # Add visualization if requested and available
-    if include_viz and include_visualizations:
-        try:
-            # Only attempt visualization if kaleido is available
-            import kaleido
-            
-            # Create treemap visualization
-            viz_fig = create_hierarchical_visualization(queries, original_query, analysis_results)
-            
-            # Convert to image
-            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp_file:
+        
+        # Original Query - escape special characters
+        safe_original_query = original_query.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+        story.append(Paragraph(f"<b>Original Query:</b> {safe_original_query}", styles['Normal']))
+        story.append(Paragraph(f"<b>Generated:</b> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", styles['Normal']))
+        story.append(Paragraph(f"<b>Total Queries Generated:</b> {len(queries)}", styles['Normal']))
+        story.append(Spacer(1, 20))
+        
+        # Personalization Context
+        if personalization_data:
+            story.append(Paragraph("<b>Personalization Context Applied:</b>", styles['Heading3']))
+            for key, value in personalization_data.items():
+                safe_value = str(value).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                story.append(Paragraph(f"• {key.title()}: {safe_value}", styles['Normal']))
+            story.append(Spacer(1, 20))
+        
+        # Add visualization if requested and available
+        if include_viz and include_visualizations:
+            viz_added = False
+            try:
+                # Only attempt visualization if kaleido is available
+                import kaleido
+                
+                # Create treemap visualization
+                viz_fig = create_hierarchical_visualization(queries, original_query, analysis_results)
+                
+                # Convert to image - don't delete yet
+                tmp_file = tempfile.NamedTemporaryFile(suffix='.png', delete=False)
+                temp_files.append(tmp_file.name)
+                tmp_file.close()
+                
                 viz_fig.write_image(tmp_file.name, width=1200, height=800, scale=2)
                 
-                # Add to PDF without KeepTogether
+                # Add to PDF
                 story.append(Paragraph("<b>Query Hierarchy Visualization</b>", styles['Heading2']))
                 img = Image(tmp_file.name, width=6*inch, height=4*inch)
                 story.append(img)
                 story.append(Spacer(1, 20))
-                
-            # Clean up temp file
-            os.unlink(tmp_file.name)
-                
-        except ImportError:
-            # If kaleido is not available, add a note
-            story.append(Paragraph("<b>Query Hierarchy Visualization</b>", styles['Heading2']))
-            story.append(Paragraph("<i>Note: Visualization could not be included. To include visualizations in PDFs, install kaleido: pip install kaleido</i>", styles['Normal']))
-            story.append(Spacer(1, 20))
-        except Exception as e:
-            # If any other error occurs, continue without visualization
-            story.append(Paragraph("<b>Query Hierarchy Visualization</b>", styles['Heading2']))
-            story.append(Paragraph(f"<i>Note: Visualization could not be generated: {str(e)}</i>", styles['Normal']))
-            story.append(Spacer(1, 20))
-    
-    # Query Distribution
-    type_counts = {}
-    for q in queries:
-        qtype = q.get('type', 'unknown')
-        type_counts[qtype] = type_counts.get(qtype, 0) + 1
-    
-    # Create distribution table
-    dist_data = [['Query Type', 'Count', 'Percentage']]
-    for qtype, count in type_counts.items():
-        type_info = QUERY_TYPES.get(qtype, {"name": qtype})
-        percentage = f"{(count/len(queries)*100):.1f}%"
-        dist_data.append([type_info['name'], str(count), percentage])
-    
-    dist_table = Table(dist_data, colWidths=[3*inch, 1.5*inch, 1.5*inch])
-    dist_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#FF6B6B')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 14),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#F0F0F0')),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
-    ]))
-    
-    story.append(Paragraph("<b>Query Distribution</b>", styles['Heading2']))
-    story.append(dist_table)
-    story.append(Spacer(1, 20))
-    
-    # Generated Queries
-    story.append(PageBreak())
-    story.append(Paragraph("<b>Generated Queries</b>", styles['Heading2']))
-    
-    # Group by type
-    grouped = {}
-    for q in queries:
-        qtype = q.get('type', 'unknown')
-        if qtype not in grouped:
-            grouped[qtype] = []
-        grouped[qtype].append(q)
-    
-    for qtype, type_queries in grouped.items():
-        type_info = QUERY_TYPES.get(qtype, {"name": qtype, "icon": "❓"})
-        story.append(Paragraph(f"{type_info['icon']} <b>{type_info['name']}</b>", styles['Heading3']))
+                viz_added = True
+                    
+            except ImportError:
+                # If kaleido is not available, add a note
+                story.append(Paragraph("<b>Query Hierarchy Visualization</b>", styles['Heading2']))
+                story.append(Paragraph("<i>Note: Visualization could not be included. To include visualizations in PDFs, install kaleido: pip install kaleido</i>", styles['Normal']))
+                story.append(Spacer(1, 20))
+            except Exception as e:
+                # If any other error occurs, continue without visualization
+                story.append(Paragraph("<b>Query Hierarchy Visualization</b>", styles['Heading2']))
+                story.append(Paragraph(f"<i>Note: Visualization could not be generated.</i>", styles['Normal']))
+                story.append(Spacer(1, 20))
         
-        for q in type_queries:
-            # Escape special characters in all text fields
-            safe_query = str(q.get('query', '')).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-            safe_intent = str(q.get('intent', 'N/A')).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-            
-            story.append(Paragraph(f"• {safe_query}", styles['Normal']))
-            story.append(Paragraph(f"  <i>Intent: {safe_intent}</i>", styles['Normal']))
-            story.append(Paragraph(f"  <i>Confidence: {q.get('confidence', 0):.0%} | Priority: {q.get('priority', 'medium')}</i>", styles['Normal']))
-            story.append(Spacer(1, 10))
-    
-    # Content Analysis Results
-    if analysis_results:
-        story.append(PageBreak())
-        story.append(Paragraph("<b>Content Analysis Results</b>", styles['Heading2']))
+        # Query Distribution
+        type_counts = {}
+        for q in queries:
+            qtype = q.get('type', 'unknown')
+            type_counts[qtype] = type_counts.get(qtype, 0) + 1
         
-        # Summary stats
-        high_matches = len([r for r in analysis_results if r['match_score'] > 0.7])
-        medium_matches = len([r for r in analysis_results if 0.3 < r['match_score'] <= 0.7])
-        low_matches = len([r for r in analysis_results if r['match_score'] <= 0.3])
+        # Create distribution table
+        dist_data = [['Query Type', 'Count', 'Percentage']]
+        for qtype, count in type_counts.items():
+            type_info = QUERY_TYPES.get(qtype, {"name": qtype})
+            percentage = f"{(count/len(queries)*100):.1f}%"
+            dist_data.append([type_info['name'], str(count), percentage])
         
-        summary_data = [
-            ['Match Level', 'Count', 'Percentage'],
-            ['High (>70%)', str(high_matches), f"{(high_matches/len(analysis_results)*100):.1f}%"],
-            ['Medium (30-70%)', str(medium_matches), f"{(medium_matches/len(analysis_results)*100):.1f}%"],
-            ['Low (<30%)', str(low_matches), f"{(low_matches/len(analysis_results)*100):.1f}%"]
-        ]
-        
-        summary_table = Table(summary_data, colWidths=[2.5*inch, 1.5*inch, 1.5*inch])
-        summary_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#45B7D1')),
+        dist_table = Table(dist_data, colWidths=[3*inch, 1.5*inch, 1.5*inch])
+        dist_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#FF6B6B')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#F5F5F5'))
+            ('FONTSIZE', (0, 0), (-1, 0), 14),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#F0F0F0')),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
         ]))
         
-        story.append(summary_table)
+        story.append(Paragraph("<b>Query Distribution</b>", styles['Heading2']))
+        story.append(dist_table)
         story.append(Spacer(1, 20))
         
-        # Top matches
-        story.append(Paragraph("<b>Top 10 Matching Queries</b>", styles['Heading3']))
-        top_matches = analysis_results[:10]
+        # Generated Queries
+        story.append(PageBreak())
+        story.append(Paragraph("<b>Generated Queries</b>", styles['Heading2']))
         
-        if top_matches:
-            match_data = [['Query', 'Match Score', 'Type', 'Keywords']]
-            for match in top_matches:
-                score_str = f"{match['match_score']:.0%}"
-                keywords = ', '.join(match.get('matched_words', [])[:5])
-                if len(match.get('matched_words', [])) > 5:
-                    keywords += '...'
-                
-                # Escape special characters
-                safe_query = str(match.get('query', ''))[:60].replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-                if len(match.get('query', '')) > 60:
-                    safe_query += "..."
-                    
-                match_data.append([
-                    safe_query,
-                    score_str,
-                    QUERY_TYPES.get(match['type'], {}).get('name', match['type']),
-                    keywords or 'None'
-                ])
+        # Group by type
+        grouped = {}
+        for q in queries:
+            qtype = q.get('type', 'unknown')
+            if qtype not in grouped:
+                grouped[qtype] = []
+            grouped[qtype].append(q)
+        
+        for qtype, type_queries in grouped.items():
+            type_info = QUERY_TYPES.get(qtype, {"name": qtype, "icon": "❓"})
+            story.append(Paragraph(f"{type_info['icon']} <b>{type_info['name']}</b>", styles['Heading3']))
             
-            match_table = Table(match_data, colWidths=[3*inch, 1*inch, 1.5*inch, 1.5*inch])
-            match_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4ECDC4')),
+            for q in type_queries:
+                # Escape special characters in all text fields
+                safe_query = str(q.get('query', '')).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                safe_intent = str(q.get('intent', 'N/A')).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                
+                story.append(Paragraph(f"• {safe_query}", styles['Normal']))
+                story.append(Paragraph(f"  <i>Intent: {safe_intent}</i>", styles['Normal']))
+                story.append(Paragraph(f"  <i>Confidence: {q.get('confidence', 0):.0%} | Priority: {q.get('priority', 'medium')}</i>", styles['Normal']))
+                story.append(Spacer(1, 10))
+        
+        # Content Analysis Results
+        if analysis_results:
+            story.append(PageBreak())
+            story.append(Paragraph("<b>Content Analysis Results</b>", styles['Heading2']))
+            
+            # Summary stats
+            high_matches = len([r for r in analysis_results if r['match_score'] > 0.7])
+            medium_matches = len([r for r in analysis_results if 0.3 < r['match_score'] <= 0.7])
+            low_matches = len([r for r in analysis_results if r['match_score'] <= 0.3])
+            
+            summary_data = [
+                ['Match Level', 'Count', 'Percentage'],
+                ['High (>70%)', str(high_matches), f"{(high_matches/len(analysis_results)*100):.1f}%"],
+                ['Medium (30-70%)', str(medium_matches), f"{(medium_matches/len(analysis_results)*100):.1f}%"],
+                ['Low (<30%)', str(low_matches), f"{(low_matches/len(analysis_results)*100):.1f}%"]
+            ]
+            
+            summary_table = Table(summary_data, colWidths=[2.5*inch, 1.5*inch, 1.5*inch])
+            summary_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#45B7D1')),
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                ('ALIGN', (1, 0), (1, -1), 'CENTER'),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, 0), (-1, -1), 10),
                 ('GRID', (0, 0), (-1, -1), 1, colors.black),
-                ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#FAFAFA')),
-                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor('#FAFAFA'), colors.HexColor('#F0F0F0')])
+                ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#F5F5F5'))
             ]))
             
-            story.append(match_table)
-    
-    # Build PDF
-    try:
+            story.append(summary_table)
+            story.append(Spacer(1, 20))
+            
+            # Top matches
+            story.append(Paragraph("<b>Top 10 Matching Queries</b>", styles['Heading3']))
+            top_matches = analysis_results[:10]
+            
+            if top_matches:
+                match_data = [['Query', 'Match Score', 'Type', 'Keywords']]
+                for match in top_matches:
+                    score_str = f"{match['match_score']:.0%}"
+                    keywords = ', '.join(match.get('matched_words', [])[:5])
+                    if len(match.get('matched_words', [])) > 5:
+                        keywords += '...'
+                    
+                    # Escape special characters
+                    safe_query = str(match.get('query', ''))[:60].replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                    if len(match.get('query', '')) > 60:
+                        safe_query += "..."
+                        
+                    match_data.append([
+                        safe_query,
+                        score_str,
+                        QUERY_TYPES.get(match['type'], {}).get('name', match['type']),
+                        keywords or 'None'
+                    ])
+                
+                match_table = Table(match_data, colWidths=[3*inch, 1*inch, 1.5*inch, 1.5*inch])
+                match_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4ECDC4')),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                    ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                    ('ALIGN', (1, 0), (1, -1), 'CENTER'),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, -1), 10),
+                    ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                    ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#FAFAFA')),
+                    ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor('#FAFAFA'), colors.HexColor('#F0F0F0')])
+                ]))
+                
+                story.append(match_table)
+        
+        # Build PDF
         doc.build(story)
         buffer.seek(0)
+        
+        # Clean up temp files after PDF is built
+        for temp_file in temp_files:
+            try:
+                os.unlink(temp_file)
+            except:
+                pass
+                
         return buffer
+        
     except Exception as e:
+        # Clean up temp files on error
+        for temp_file in temp_files:
+            try:
+                os.unlink(temp_file)
+            except:
+                pass
+                
         st.error(f"Error generating PDF: {str(e)}")
         return None
 
