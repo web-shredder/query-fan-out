@@ -44,7 +44,7 @@ except ImportError:
     REPORTLAB_AVAILABLE = False
 
 # App config
-st.set_page_config(page_title="Qforia Pro", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="heLLiuM 3.0", layout="wide", initial_sidebar_state="expanded")
 
 # Custom CSS
 st.markdown("""
@@ -78,7 +78,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🔮 HeLLiuM - LLM Query Fan Out Simulator")
+st.title("heLLiuM 3.0")
 st.markdown("*Powered by Gemini, OpenAI, and Claude with Advanced Analytics*")
 
 # Initialize session state
@@ -675,33 +675,109 @@ def create_sunburst_visualization(queries, original_query, content_analysis=None
     return fig
 
 def analyze_content(content, queries):
-    """Analyze content for query matches"""
-    content_lower = content.lower()
+    """Analyze content for query matches with proper stop word filtering"""
+    import re
+    from collections import Counter
+    
+    # Comprehensive stop words list
+    STOP_WORDS = {
+        'a', 'about', 'above', 'after', 'again', 'against', 'all', 'am', 'an', 'and', 
+        'any', 'are', "aren't", 'as', 'at', 'be', 'because', 'been', 'before', 'being', 
+        'below', 'between', 'both', 'but', 'by', "can't", 'cannot', 'could', "couldn't", 
+        'did', "didn't", 'do', 'does', "doesn't", 'doing', "don't", 'down', 'during', 
+        'each', 'few', 'for', 'from', 'further', 'had', "hadn't", 'has', "hasn't", 
+        'have', "haven't", 'having', 'he', "he'd", "he'll", "he's", 'her', 'here', 
+        "here's", 'hers', 'herself', 'him', 'himself', 'his', 'how', "how's", 'i', 
+        "i'd", "i'll", "i'm", "i've", 'if', 'in', 'into', 'is', "isn't", 'it', "it's", 
+        'its', 'itself', "let's", 'me', 'more', 'most', "mustn't", 'my', 'myself', 
+        'no', 'nor', 'not', 'of', 'off', 'on', 'once', 'only', 'or', 'other', 'ought', 
+        'our', 'ours', 'ourselves', 'out', 'over', 'own', 'same', "shan't", 'she', 
+        "she'd", "she'll", "she's", 'should', "shouldn't", 'so', 'some', 'such', 
+        'than', 'that', "that's", 'the', 'their', 'theirs', 'them', 'themselves', 
+        'then', 'there', "there's", 'these', 'they', "they'd", "they'll", "they're", 
+        "they've", 'this', 'those', 'through', 'to', 'too', 'under', 'until', 'up', 
+        'very', 'was', "wasn't", 'we', "we'd", "we'll", "we're", "we've", 'were', 
+        "weren't", 'what', "what's", 'when', "when's", 'where', "where's", 'which', 
+        'while', 'who', "who's", 'whom', 'why', "why's", 'with', "won't", 'would', 
+        "wouldn't", 'you', "you'd", "you'll", "you're", "you've", 'your', 'yours', 
+        'yourself', 'yourselves', 'can', 'will', 'just', 'should', 'us'
+    }
+    
+    def extract_keywords(text):
+        """Extract meaningful keywords from text"""
+        # Convert to lowercase and extract words
+        words = re.findall(r'\b[a-zA-Z]+\b', text.lower())
+        
+        # Filter out stop words and short words
+        keywords = []
+        for word in words:
+            if word not in STOP_WORDS and len(word) > 2:
+                keywords.append(word)
+        
+        # Also extract:
+        # 1. Acronyms (all caps)
+        acronyms = re.findall(r'\b[A-Z]{2,}\b', text)
+        keywords.extend([a.lower() for a in acronyms])
+        
+        # 2. Compound terms
+        compounds = re.findall(r'\b\w+(?:-\w+)+\b', text.lower())
+        keywords.extend(compounds)
+        
+        # 3. Numbers that might be years or important
+        numbers = re.findall(r'\b\d{4}\b', text)
+        keywords.extend(numbers)
+        
+        return keywords
+    
+    # Extract keywords from content
+    content_keywords = extract_keywords(content)
+    content_keyword_set = set(content_keywords)
+    
     analysis_results = []
     
     for query in queries:
-        query_text = query['query'].lower()
-        query_words = set(query_text.split())
-        content_words = set(content_lower.split())
+        # Extract keywords from query
+        query_keywords = extract_keywords(query['query'])
+        query_keyword_set = set(query_keywords)
         
-        # Calculate match score
-        common_words = query_words & content_words
-        match_score = len(common_words) / len(query_words) if query_words else 0
+        # Find matching keywords (excluding stop words)
+        matched_keywords = []
+        for keyword in query_keyword_set:
+            if keyword in content_keyword_set:
+                matched_keywords.append(keyword)
         
-        # Check for exact phrase match
-        exact_match = query_text in content_lower
+        # Calculate match score based on meaningful keywords only
+        if query_keyword_set:
+            match_score = len(matched_keywords) / len(query_keyword_set)
+        else:
+            match_score = 0
         
-        # Boost score for exact matches
-        if exact_match:
-            match_score = min(match_score + 0.3, 1.0)
+        # Check for exact phrase matches (bonus points)
+        exact_match_bonus = 0
+        query_lower = query['query'].lower()
+        content_lower = content.lower()
+        
+        # Check for important phrases
+        important_phrases = []
+        if len(query_keywords) >= 2:
+            # Create 2-word phrases from keywords
+            for i in range(len(query_keywords)-1):
+                phrase = f"{query_keywords[i]} {query_keywords[i+1]}"
+                if phrase in content_lower:
+                    exact_match_bonus = 0.1
+                    important_phrases.append(phrase)
+        
+        # Final score with bonus
+        final_score = min(match_score + exact_match_bonus, 1.0)
         
         analysis_results.append({
             'query': query['query'],
             'type': query['type'],
-            'match_score': match_score,
-            'exact_match': exact_match,
-            'matched_words': list(common_words),
-            'confidence': query.get('confidence', 0)
+            'match_score': final_score,
+            'matched_words': matched_keywords,
+            'query_keywords': list(query_keyword_set),
+            'confidence': query.get('confidence', 0),
+            'priority': query.get('priority', 'medium')
         })
     
     # Sort by match score
@@ -1005,7 +1081,14 @@ with tabs[2]:  # Content Analysis Tab
                     with col1:
                         st.markdown(f"**{match['query']}**")
                         if match['matched_words']:
-                            st.caption(f"Matched words: {', '.join(match['matched_words'][:5])}")
+                            st.caption(f"Keywords: **{', '.join(match['matched_words'])}**")
+                        else:
+                            st.caption("No keyword matches")
+                        
+                        # Show query keywords for debugging
+                        with st.expander("Debug Info", expanded=False):
+                            st.caption(f"Query keywords: {', '.join(match.get('query_keywords', []))}")
+                            st.caption(f"Matched: {match['matched_words']}")
                     
                     with col2:
                         st.markdown(f"<span class='match-score {score_class}'>{score:.0%}</span>", 
@@ -1353,7 +1436,7 @@ with tabs[5]:  # Resources Tab
     st.markdown("""
     <div style='text-align: center; padding: 20px;'>
         <h4>🔮 HeLLiuM - LLM Query Fan Out Simulator</h4>
-        <p>Built with vibes by Tyler Einberger, based on original work by Mike King</p>
+        <p>Built with ❤️ by Tyler Einberger, based on original work by Mike King</p>
         <p>Powered by Google Gemini, OpenAI, and Anthropic Claude</p>
         <br>
         <p><em>"Multiplied intelligence for search understanding."</em></p>
