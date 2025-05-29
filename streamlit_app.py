@@ -1137,140 +1137,140 @@ with tabs[4]:  # History Tab
 with tabs[5]:  # Resources Tab
     st.markdown("### 📖 Resources & Documentation")
     
-   # Quick Start Guide
-with st.expander("🚀 Quick Start Guide", expanded=True):
-   st.markdown("""
-### 🏁 Getting Started with **Qforia Pro**
-
-1. **Set Up Your API Key**
-   • Pick a provider → *Gemini · OpenAI · Claude*  
-   • Paste your key in the sidebar  
-   • Choose a model that fits your task
-
-2. **Configure Your Query**
-   • Type your **head query**  
-   • Select a *Search Mode*  
-     | Mode | # Sub-Queries | Best For |
-     |------|--------------|----------|
-     | **AI Overview** | 12-20 | Quick scans |
-     | **AI Mode (Complex)** | 20-35 | Deep dives |
-     | **Research** | 35-50 | Exhaustive coverage |
-     | **Comparative** | — | Side-by-side choices |
-     | **Multi-Perspective** | — | Diverse viewpoints |
-
-3. **Generate Queries**
-   • Hit **Generate** ▶️  
-   • Inspect results in **Results** tab  
-   • Filter by *type · priority · confidence*
-
-4. **(Optional) Analyze Your Content**
-   • Paste draft text in **Content Analysis**  
-   • See alignment scores & gaps  
-   • Export findings to share
-
-5. **Visualize & Export**
-   • Switch views → Treemap · Sunburst · Table  
-   • Download raw data (CSV · JSON) or a PDF report  
-   • Save graphics as PNG/SVG
-""")
-
-# About the Technology
-with st.expander("🧠 Understanding the Technology"):
-    st.markdown("""
-### 🔍 Inside Google’s **“Search with Stateful Chat”** Patent
-
-Google’s 2024 patent (US 2024/0289407 A1) details how it *fans-out* a single search into dozens of machine-generated variants to grasp intent.
-
-| Concept | What It Means | Why It Helps |
-|---------|---------------|--------------|
-| **Query Fan-Out** | Spawn many sibling queries around your prompt | Captures nuance & hidden needs |
-| **Reformulations** | Same ask, different phrasing | Matches varied user language |
-| **Related Queries** | Tangential but relevant asks | Surfaces adjacent topics |
-| **Implicit Intents** | Questions you didn’t verbalize | Anticipates follow-ups |
-| **Comparative Angles** | “X vs Y” frames | Aids decision making |
-| **Entity Drills** | Deep dives on nouns in the query | Builds expertise signals |
-| **Personalized Splits** | Adds context like location or recency | Boosts relevance |
-
-**Real-World Example** – Head query **“best electric SUV”** → the engine may also ask:  
-• “electric SUV cost of ownership 2025”  
-• “Tesla Model Y vs Ford Mach-E range”  
-• “family-friendly electric SUV safety ratings”  
-
-This tool exposes that same brainstorming engine to you.
-""")
-
-# Advanced Features
-with st.expander("🔬 Advanced Features & Tips"):
-    st.markdown("""
-### 💡 Power-User Playbook
-
-**📈 Visual Explorers**  
-• **Treemap** → size = query weight, shade = confidence  
-• **Sunburst** → click rings to zoom; center = head topic
-
-**📝 Content Analysis Signals**  
-• **Match Score ≥ 70 %** → well-covered  
-• **Match Score ≤ 30 %** → content gap → opportunity  
-• Hover any bar to view exact keyword overlap
-
-**🤖 Multi-Provider Tactics**  
-| Provider | Sweet Spot |
-|----------|------------|
-| **Gemini** | Speed & cost |
-| **GPT-4(o)** | Structured reasoning |
-| **Claude** | Long-form nuance |
-
-**↗️ Export Wisely**  
-• **CSV** → spreadsheets & BI tools  
-• **PDF** → client decks  
-• **JSON** → pipelines & no-code automations  
-• **HTML** → interactive embeds
-
-**⚙️ Performance Knobs**  
-• **Temperature ↓** → deterministic output  
-• **Temperature ↑** → creative breadth  
-• Raise **max tokens** for complex topics
-""")
-
-# Credits and Attribution
-with st.expander("👥 Credits & Attribution", expanded=True):
-    st.markdown("""
-### 🏆 Core Team
-
-| Role | Name | Links |
-|------|------|-------|
-| **Lead Dev (v3.0)** | *Tyler Einberger* | [LinkedIn](https://www.linkedin.com/in/tyler-einberger) · [Site](https://tylereinberger.com) · [Momentic](https://momenticmarketing.com/team/tyler-einberger) |
-| **Original Creator (v1.0)** | *Mike King* | [Qforia 1.0](https://qforia.streamlit.app/) |
-
-> 🙏 Shout-out to Mike for open-sourcing the OG tool.
-
----
-
-### 📜 Version Timeline
-* **v3.0** – Multi-provider, visual dashboards, PDF export  
-* **v2.0** – Confidence scoring, session history, UI revamp  
-* **v1.0** – Core query generation concept
-""")
+       # Quick Start Guide
+    with st.expander("🚀 Quick Start Guide", expanded=True):
+       st.markdown("""
+    ### 🏁 Getting Started with **Qforia Pro**
     
-# API Resources
-with st.expander("🔗 API Documentation & Resources"):
-    st.markdown("""
-### 🔑 Grab Your API Keys
+    1. **Set Up Your API Key**
+       • Pick a provider → *Gemini · OpenAI · Claude*  
+       • Paste your key in the sidebar  
+       • Choose a model that fits your task
 
-| Provider | Get Key | Docs | Pricing |
-|----------|---------|------|---------|
-| **Gemini** | [Create Key](https://makersuite.google.com/app/apikey) | [Docs](https://ai.google.dev/docs) | Free tier |
-| **OpenAI** | [Create Key](https://platform.openai.com/api-keys) | [Docs](https://platform.openai.com/docs) | Pay-go |
-| **Claude** | [Create Key](https://console.anthropic.com/) | [Docs](https://docs.anthropic.com/) | Usage-based |
-
-**Model Cheatsheet**
-
-| Goal | Fast & Cheap | Balanced | Premium |
-|------|--------------|----------|---------|
-| **Speed/Cost** | Gemini 1.5 Flash | — | — |
-| **Balance** | GPT-4o mini | GPT-4o | Claude Sonnet 3.5 |
-| **Quality** | — | Gemini 2.0 Flash | GPT-4 · Claude Opus |
-""")
+    2. **Configure Your Query**
+       • Type your **head query**  
+       • Select a *Search Mode*  
+         | Mode | # Sub-Queries | Best For |
+         |------|--------------|----------|
+         | **AI Overview** | 12-20 | Quick scans |
+         | **AI Mode (Complex)** | 20-35 | Deep dives |
+         | **Research** | 35-50 | Exhaustive coverage |
+         | **Comparative** | — | Side-by-side choices |
+         | **Multi-Perspective** | — | Diverse viewpoints |
+    
+    3. **Generate Queries**
+       • Hit **Generate** ▶️  
+       • Inspect results in **Results** tab  
+       • Filter by *type · priority · confidence*
+    
+    4. **(Optional) Analyze Your Content**
+       • Paste draft text in **Content Analysis**  
+       • See alignment scores & gaps  
+       • Export findings to share
+    
+    5. **Visualize & Export**
+       • Switch views → Treemap · Sunburst · Table  
+       • Download raw data (CSV · JSON) or a PDF report  
+       • Save graphics as PNG/SVG
+    """)
+    
+    # About the Technology
+    with st.expander("🧠 Understanding the Technology"):
+        st.markdown("""
+    ### 🔍 Inside Google’s **“Search with Stateful Chat”** Patent
+    
+    Google’s 2024 patent (US 2024/0289407 A1) details how it *fans-out* a single search into dozens of machine-generated variants to grasp intent.
+    
+    | Concept | What It Means | Why It Helps |
+    |---------|---------------|--------------|
+    | **Query Fan-Out** | Spawn many sibling queries around your prompt | Captures nuance & hidden needs |
+    | **Reformulations** | Same ask, different phrasing | Matches varied user language |
+    | **Related Queries** | Tangential but relevant asks | Surfaces adjacent topics |
+    | **Implicit Intents** | Questions you didn’t verbalize | Anticipates follow-ups |
+    | **Comparative Angles** | “X vs Y” frames | Aids decision making |
+    | **Entity Drills** | Deep dives on nouns in the query | Builds expertise signals |
+    | **Personalized Splits** | Adds context like location or recency | Boosts relevance |
+    
+    **Real-World Example** – Head query **“best electric SUV”** → the engine may also ask:  
+    • “electric SUV cost of ownership 2025”  
+    • “Tesla Model Y vs Ford Mach-E range”  
+    • “family-friendly electric SUV safety ratings”  
+    
+    This tool exposes that same brainstorming engine to you.
+    """)
+    
+    # Advanced Features
+    with st.expander("🔬 Advanced Features & Tips"):
+        st.markdown("""
+    ### 💡 Power-User Playbook
+    
+    **📈 Visual Explorers**  
+    • **Treemap** → size = query weight, shade = confidence  
+    • **Sunburst** → click rings to zoom; center = head topic
+    
+    **📝 Content Analysis Signals**  
+    • **Match Score ≥ 70 %** → well-covered  
+    • **Match Score ≤ 30 %** → content gap → opportunity  
+    • Hover any bar to view exact keyword overlap
+    
+    **🤖 Multi-Provider Tactics**  
+    | Provider | Sweet Spot |
+    |----------|------------|
+    | **Gemini** | Speed & cost |
+    | **GPT-4(o)** | Structured reasoning |
+    | **Claude** | Long-form nuance |
+    
+    **↗️ Export Wisely**  
+    • **CSV** → spreadsheets & BI tools  
+    • **PDF** → client decks  
+    • **JSON** → pipelines & no-code automations  
+    • **HTML** → interactive embeds
+    
+    **⚙️ Performance Knobs**  
+    • **Temperature ↓** → deterministic output  
+    • **Temperature ↑** → creative breadth  
+    • Raise **max tokens** for complex topics
+    """)
+    
+    # Credits and Attribution
+    with st.expander("👥 Credits & Attribution", expanded=True):
+        st.markdown("""
+    ### 🏆 Core Team
+    
+    | Role | Name | Links |
+    |------|------|-------|
+    | **Lead Dev (v3.0)** | *Tyler Einberger* | [LinkedIn](https://www.linkedin.com/in/tyler-einberger) · [Site](https://tylereinberger.com) · [Momentic](https://momenticmarketing.com/team/tyler-einberger) |
+    | **Original Creator (v1.0)** | *Mike King* | [Qforia 1.0](https://qforia.streamlit.app/) |
+    
+    > 🙏 Shout-out to Mike for open-sourcing the OG tool.
+    
+    ---
+    
+    ### 📜 Version Timeline
+    * **v3.0** – Multi-provider, visual dashboards, PDF export  
+    * **v2.0** – Confidence scoring, session history, UI revamp  
+    * **v1.0** – Core query generation concept
+    """)
+        
+    # API Resources
+    with st.expander("🔗 API Documentation & Resources"):
+        st.markdown("""
+    ### 🔑 Grab Your API Keys
+    
+    | Provider | Get Key | Docs | Pricing |
+    |----------|---------|------|---------|
+    | **Gemini** | [Create Key](https://makersuite.google.com/app/apikey) | [Docs](https://ai.google.dev/docs) | Free tier |
+    | **OpenAI** | [Create Key](https://platform.openai.com/api-keys) | [Docs](https://platform.openai.com/docs) | Pay-go |
+    | **Claude** | [Create Key](https://console.anthropic.com/) | [Docs](https://docs.anthropic.com/) | Usage-based |
+    
+    **Model Cheatsheet**
+    
+    | Goal | Fast & Cheap | Balanced | Premium |
+    |------|--------------|----------|---------|
+    | **Speed/Cost** | Gemini 1.5 Flash | — | — |
+    | **Balance** | GPT-4o mini | GPT-4o | Claude Sonnet 3.5 |
+    | **Quality** | — | Gemini 2.0 Flash | GPT-4 · Claude Opus |
+    """)
 
     # Use Cases
     with st.expander("💡 Use Cases & Examples"):
