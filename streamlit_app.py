@@ -44,7 +44,7 @@ except ImportError:
     REPORTLAB_AVAILABLE = False
 
 # App config
-st.set_page_config(page_title="heLLiuM 3.0", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Qforia Pro", layout="wide", initial_sidebar_state="expanded")
 
 # Custom CSS
 st.markdown("""
@@ -78,7 +78,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("heLLiuM 3.0")
+st.title("🚀 Qforia Pro: Multi-Provider AI Query Intelligence System")
 st.markdown("*Powered by Gemini, OpenAI, and Claude with Advanced Analytics*")
 
 # Initialize session state
@@ -1086,7 +1086,7 @@ with tabs[2]:  # Content Analysis Tab
                             st.caption("No keyword matches")
                         
                         # Show query keywords for debugging
-                        with st.expander("matching info", expanded=False):
+                        with st.expander("Debug Info", expanded=False):
                             st.caption(f"Query keywords: {', '.join(match.get('query_keywords', []))}")
                             st.caption(f"Matched: {match['matched_words']}")
                     
@@ -1430,13 +1430,25 @@ with tabs[5]:  # Resources Tab
         5. Create content plan based on gaps
         6. Export visualization for team presentation
         """)
+    
+    # Footer
+    st.markdown("---")
+    st.markdown("""
+    <div style='text-align: center; padding: 20px;'>
+        <h4>🔮 HeLLiuM - LLM Query Fan Out Simulator</h4>
+        <p>Built with ❤️ by Tyler Einberger, based on original work by Mike King</p>
+        <p>Powered by Google Gemini, OpenAI, and Anthropic Claude</p>
+        <br>
+        <p><em>"Multiplied intelligence for search understanding."</em></p>
+    </div>
+    """, unsafe_allow_html=True)
 
 # Footer
 st.markdown("---")
 st.markdown("""
-<div style='text-align: center; color: #000;'>
-    <p>🔮 HeLLiuM - LLM Query Fan Out Simulator</p>
-    <p>Built with vibes (Claude) by <a href='https://www.linkedin.com/in/tyler-einberger' target='_blank'>Tyler Einberger</a> | 
+<div style='text-align: center; color: #666;'>
+    <p>HeLLiuM v3.0 | LLM Query Fan Out Simulator</p>
+    <p>Created by <a href='https://www.linkedin.com/in/tyler-einberger' target='_blank'>Tyler Einberger</a> | 
     Based on <a href='https://qforia.streamlit.app/' target='_blank'>original</a> by Mike King</p>
 </div>
 """, unsafe_allow_html=True)
