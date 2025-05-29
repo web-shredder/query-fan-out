@@ -507,31 +507,39 @@ def create_mindmap(queries, original_query):
     for node_type, color, size in [("center", "#FF6B6B", 30), 
                                    ("category", "#4ECDC4", 20), 
                                    ("query", "#45B7D1", 15)]:
-        node_trace = go.Scatter(
-            x=[], y=[],
-            text=[], 
-            mode='markers+text',
-            textposition="top center",
-            hoverinfo='text',
-            marker=dict(
-                size=size,
-                color=color,
-                line=dict(color='white', width=2)
-            )
-        )
+        node_x = []
+        node_y = []
+        node_text = []
+        hover_text = []
         
         for node, data in G.nodes(data=True):
             if data.get('type') == node_type:
                 x, y = pos[node]
-                node_trace['x'] += (x,)
-                node_trace['y'] += (y,)
-                node_trace['text'] += (data.get('label', ''),)
+                node_x.append(x)
+                node_y.append(y)
+                node_text.append(data.get('label', ''))
                 
                 if node_type == "query":
-                    hover_text = f"{data.get('full_query', '')}<br>Confidence: {data.get('confidence', 0):.0%}"
-                    node_trace['hovertext'] = node_trace.get('hovertext', []) + (hover_text,)
+                    hover = f"{data.get('full_query', '')}<br>Confidence: {data.get('confidence', 0):.0%}"
+                    hover_text.append(hover)
+                else:
+                    hover_text.append(data.get('label', ''))
         
-        if node_trace['x']:
+        if node_x:  # Only create trace if there are nodes
+            node_trace = go.Scatter(
+                x=node_x,
+                y=node_y,
+                text=node_text,
+                hovertext=hover_text,
+                mode='markers+text',
+                textposition="top center",
+                hoverinfo='text',
+                marker=dict(
+                    size=size,
+                    color=color,
+                    line=dict(color='white', width=2)
+                )
+            )
             node_traces.append(node_trace)
     
     fig = go.Figure(data=[edge_trace] + node_traces,
