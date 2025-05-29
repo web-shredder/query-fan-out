@@ -1277,7 +1277,7 @@ with tabs[5]:  # Resources Tab
     st.markdown("### 📖 Resources & Documentation")
     
     # Quick Start Guide
-    with st.expander("🚀 Quick Start Guide", expanded=True):
+    with st.expander("Quick Start Guide", expanded=True):
         st.markdown("""
         ### Getting Started with heLLiuM
         
@@ -1312,7 +1312,7 @@ with tabs[5]:  # Resources Tab
         """)
     
     # About the Technology
-    with st.expander("🧠 Understanding the Technology"):
+    with st.expander("Understanding the Technology"):
         st.markdown("""
         ### The Google Patent Explained
         
@@ -1320,9 +1320,9 @@ with tabs[5]:  # Resources Tab
         
         **Key Concepts:**
         
-        📍 **Query Fan-Out**: Instead of processing just one query, the system generates many related queries to explore different aspects of your search intent.
+        **Query Fan-Out**: Instead of processing just one query, the system generates many related queries to explore different aspects of your search intent.
         
-        🔄 **Query Types**:
+        **Query Types**:
         - **Reformulations**: Different ways to phrase the same question
         - **Related Queries**: Adjacent topics you might be interested in
         - **Implicit Queries**: Hidden questions within your main query
@@ -1330,15 +1330,15 @@ with tabs[5]:  # Resources Tab
         - **Entity Expansions**: Deep dives on specific things mentioned
         - **Personalized Queries**: Variations based on context
         
-        🎯 **Why This Matters**:
+        **Why This Matters**:
         - Better content coverage for SEO
         - Understanding user search behavior
         - Creating comprehensive content strategies
         - Identifying content gaps
         - Improving search relevance
         
-        💡 **Real-World Application**: When you search for "best electric SUV", Google might internally generate queries like:
-        - "electric SUV comparison 2024"
+        **Real-World Application**: When you search for "best electric SUV", Google might internally generate queries like:
+        - "electric SUV comparison 2025"
         - "Tesla Model Y vs competitors"
         - "electric SUV range anxiety"
         - "cost of owning electric SUV"
@@ -1352,31 +1352,31 @@ with tabs[5]:  # Resources Tab
         st.markdown("""
         ### Pro Tips for Power Users
         
-        **🎨 Visualization Features**
+        **Visualization Features**
         - Use Treemap view for hierarchical analysis
         - Switch to Sunburst for radial exploration
         - Colors indicate confidence or match scores
         - Click sections to zoom in (Sunburst)
         
-        **📊 Content Analysis**
+        **Content Analysis**
         - Match scores show keyword overlap
         - High matches (>70%) indicate well-covered topics
         - Low matches (<30%) reveal content gaps
         - Use this for content optimization
         
-        **🤖 Multi-Provider Strategy**
+        **Multi-Provider Strategy**
         - Gemini: Fast and cost-effective
         - GPT-4: Advanced reasoning
         - Claude: Nuanced understanding
         - Try different providers for different perspectives
         
-        **📤 Export Strategies**
+        **Export Strategies**
         - CSV: For spreadsheet analysis
         - PDF: For client reports
         - JSON: For programmatic use
         - HTML visualizations: For interactive sharing
         
-        **⚡ Performance Tips**
+        **Performance Tips**
         - Lower temperature for consistent results
         - Higher temperature for creative variations
         - Adjust max tokens based on query complexity
@@ -1384,11 +1384,11 @@ with tabs[5]:  # Resources Tab
         """)
     
     # Credits and Attribution
-    with st.expander("👥 Credits & Attribution", expanded=True):
+    with st.expander("👥 Credits & Attribution"):
         st.markdown("""
-        ### 🏆 heLLiuM Team
+        ### heLLiuM Team
         
-        #### 🚀 **Version 3.0 Developer**
+        #### **Version 3.0 Developer**
         **Tyler Einberger** - Enhanced and expanded Qforia into heLLiuM with advanced features
         
         Connect with Tyler:
@@ -1397,7 +1397,7 @@ with tabs[5]:  # Resources Tab
         - 🏢 [Momentic Marketing](https://momenticmarketing.com/team/tyler-einberger)
         - 🏙️ [MKE DMC](https://www.mkedmc.org/people/tyler-einberger)
         
-        #### 🎨 **Original Creator**
+        #### **Original Creator**
         **Mike King** - Created Qforia 1.0, the foundation for this tool
         - 🔗 [Original Qforia](https://qforia.streamlit.app/)
         
@@ -1405,7 +1405,7 @@ with tabs[5]:  # Resources Tab
         
         ---
         
-        ### 📜 Version History
+        ### Version History
         - **v3.0** (Current - heLLiuM): Multi-provider support, visualizations, content analysis, PDF reports
         - **v2.0**: Enhanced UI, confidence scoring, session history
         - **v1.0**: Original by Mike King - Core query generation concept
