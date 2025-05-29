@@ -123,13 +123,13 @@ with st.sidebar.expander("🤖 AI Provider Configuration", expanded=True):
         gemini_models = {
             "Latest & Fast": [
                 ("gemini-1.5-flash", "1.5 Flash - Fast & versatile"),
-                ("gemini-1.5-flash-8b", "1.5 Flash-8B - High volume, lower intelligence")
-                ("gemini-2.0-flash", "2.0 Flash - Speedy & Smart")
+                ("gemini-1.5-flash-8b", "1.5 Flash-8B - High volume, lower intelligence"),
+                ("gemini-2.0-flash", "2.0 Flash - Speedy & Smart"),
                 ("gemini-2.5-flash-preview-05-20", "2.5 Flash - Adaptive thinking, cost efficiency")
 
             ],
             "Advanced & Pro": [
-                ("gemini-1.5-pro", "1.5 Pro - Complex reasoning tasks")
+                ("gemini-1.5-pro", "1.5 Pro - Complex reasoning tasks"),
                 ("gemini-2.5-pro-preview-05-06", "2.5 Pro Preview - Enhanced thinking and reasoning")
             ]
         }
