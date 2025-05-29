@@ -1064,7 +1064,7 @@ def generate_pdf_report(queries, original_query, personalization_data=None, anal
     from reportlab.lib.pagesizes import letter, A4
     from reportlab.lib import colors
     from reportlab.lib.units import inch
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image, PageBreak, KeepTogether
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image, PageBreak
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.enums import TA_CENTER, TA_LEFT
     import tempfile
@@ -1086,8 +1086,9 @@ def generate_pdf_report(queries, original_query, personalization_data=None, anal
     story.append(Paragraph("heLLiuM Query Analysis Report", title_style))
     story.append(Spacer(1, 20))
     
-    # Original Query
-    story.append(Paragraph(f"<b>Original Query:</b> {original_query}", styles['Normal']))
+    # Original Query - escape special characters
+    safe_original_query = original_query.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+    story.append(Paragraph(f"<b>Original Query:</b> {safe_original_query}", styles['Normal']))
     story.append(Paragraph(f"<b>Generated:</b> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", styles['Normal']))
     story.append(Paragraph(f"<b>Total Queries Generated:</b> {len(queries)}", styles['Normal']))
     story.append(Spacer(1, 20))
@@ -1096,7 +1097,8 @@ def generate_pdf_report(queries, original_query, personalization_data=None, anal
     if personalization_data:
         story.append(Paragraph("<b>Personalization Context Applied:</b>", styles['Heading3']))
         for key, value in personalization_data.items():
-            story.append(Paragraph(f"• {key.title()}: {value}", styles['Normal']))
+            safe_value = str(value).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+            story.append(Paragraph(f"• {key.title()}: {safe_value}", styles['Normal']))
         story.append(Spacer(1, 20))
     
     # Add visualization if requested and available
@@ -1112,18 +1114,24 @@ def generate_pdf_report(queries, original_query, personalization_data=None, anal
             with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp_file:
                 viz_fig.write_image(tmp_file.name, width=1200, height=800, scale=2)
                 
-                # Add to PDF
+                # Add to PDF without KeepTogether
                 story.append(Paragraph("<b>Query Hierarchy Visualization</b>", styles['Heading2']))
                 img = Image(tmp_file.name, width=6*inch, height=4*inch)
-                story.append(KeepTogether([img, Spacer(1, 20)]))
+                story.append(img)
+                story.append(Spacer(1, 20))
                 
             # Clean up temp file
             os.unlink(tmp_file.name)
                 
-        except Exception as e:
-            # If visualization fails, add a note instead
+        except ImportError:
+            # If kaleido is not available, add a note
             story.append(Paragraph("<b>Query Hierarchy Visualization</b>", styles['Heading2']))
             story.append(Paragraph("<i>Note: Visualization could not be included. To include visualizations in PDFs, install kaleido: pip install kaleido</i>", styles['Normal']))
+            story.append(Spacer(1, 20))
+        except Exception as e:
+            # If any other error occurs, continue without visualization
+            story.append(Paragraph("<b>Query Hierarchy Visualization</b>", styles['Heading2']))
+            story.append(Paragraph(f"<i>Note: Visualization could not be generated: {str(e)}</i>", styles['Normal']))
             story.append(Spacer(1, 20))
     
     # Query Distribution
@@ -1172,9 +1180,9 @@ def generate_pdf_report(queries, original_query, personalization_data=None, anal
         story.append(Paragraph(f"{type_info['icon']} <b>{type_info['name']}</b>", styles['Heading3']))
         
         for q in type_queries:
-            # Escape special characters in the query text
-            safe_query = q['query'].replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-            safe_intent = q.get('intent', 'N/A').replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+            # Escape special characters in all text fields
+            safe_query = str(q.get('query', '')).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+            safe_intent = str(q.get('intent', 'N/A')).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
             
             story.append(Paragraph(f"• {safe_query}", styles['Normal']))
             story.append(Paragraph(f"  <i>Intent: {safe_intent}</i>", styles['Normal']))
@@ -1224,8 +1232,8 @@ def generate_pdf_report(queries, original_query, personalization_data=None, anal
                     keywords += '...'
                 
                 # Escape special characters
-                safe_query = match['query'][:60].replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-                if len(match['query']) > 60:
+                safe_query = str(match.get('query', ''))[:60].replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                if len(match.get('query', '')) > 60:
                     safe_query += "..."
                     
                 match_data.append([
