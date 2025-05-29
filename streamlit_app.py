@@ -1,16 +1,51 @@
 import streamlit as st
-import google.generativeai as genai
 import pandas as pd
 import json
 import re
 import time
 from datetime import datetime
 import hashlib
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import networkx as nx
+from io import BytesIO
+import base64
+
+# Try to import all providers
+try:
+    import google.generativeai as genai
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
+
+try:
+    import openai
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
+
+try:
+    import anthropic
+    ANTHROPIC_AVAILABLE = True
+except ImportError:
+    ANTHROPIC_AVAILABLE = False
+
+try:
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import letter, A4
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image, PageBreak
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT
+    from reportlab.pdfgen import canvas
+    REPORTLAB_AVAILABLE = True
+except ImportError:
+    REPORTLAB_AVAILABLE = False
 
 # App config
 st.set_page_config(page_title="Qforia Pro", layout="wide", initial_sidebar_state="expanded")
 
-# Custom CSS for better UI
+# Custom CSS
 st.markdown("""
 <style>
     .stTabs [data-baseweb="tab-list"] button {
@@ -30,11 +65,20 @@ st.markdown("""
         border: 1px solid #e0e0e0;
         margin: 5px 0;
     }
+    .match-score {
+        padding: 5px 10px;
+        border-radius: 15px;
+        color: white;
+        font-weight: bold;
+    }
+    .high-match { background-color: #28a745; }
+    .medium-match { background-color: #ffc107; }
+    .low-match { background-color: #dc3545; }
 </style>
 """, unsafe_allow_html=True)
 
-st.title("Qforia 2.0: Advanced LLM Query Intelligence System")
-st.markdown("*Powered by Multi-Model Query Generation & Contextual Understanding. Based on Qforia by Mike King.*")
+st.title("🚀 Qforia Pro: Multi-Provider AI Query Intelligence System")
+st.markdown("*Powered by Gemini, OpenAI, and Claude with Advanced Analytics*")
 
 # Initialize session state
 if 'query_history' not in st.session_state:
@@ -43,37 +87,168 @@ if 'generation_sessions' not in st.session_state:
     st.session_state.generation_sessions = []
 if 'selected_queries' not in st.session_state:
     st.session_state.selected_queries = []
-if 'confidence_scores' not in st.session_state:
-    st.session_state.confidence_scores = {}
+if 'last_results' not in st.session_state:
+    st.session_state.last_results = []
+if 'content_analysis' not in st.session_state:
+    st.session_state.content_analysis = None
 
 # Sidebar configuration
 st.sidebar.header("🔧 Configuration")
 
-# API Key Management
-with st.sidebar.expander("🔑 API Configuration", expanded=True):
-    gemini_key = st.text_input("Gemini API Key", type="password", key="api_key")
+# Provider Selection
+with st.sidebar.expander("🤖 AI Provider Configuration", expanded=True):
+    available_providers = []
+    if GEMINI_AVAILABLE:
+        available_providers.append("Google Gemini")
+    if OPENAI_AVAILABLE:
+        available_providers.append("OpenAI")
+    if ANTHROPIC_AVAILABLE:
+        available_providers.append("Anthropic Claude")
     
-    # Model Selection
-    model_options = [
-        "gemini-1.5-flash-latest",
-        "gemini-1.5-pro-latest"
-    ]
-    selected_model = st.selectbox("Select Model", model_options, index=0)
+    if not available_providers:
+        st.error("No AI providers available. Please install at least one: google-generativeai, openai, or anthropic")
+        st.stop()
     
-    # Advanced Settings
+    selected_provider = st.selectbox("Select AI Provider", available_providers)
+    
+    # Provider-specific configuration
+    if selected_provider == "Google Gemini":
+        api_key = st.text_input("Gemini API Key", type="password", key="gemini_key")
+        
+        # Group models by category
+        gemini_models = {
+            "Latest & Fast": [
+                ("gemini-2.5-flash-preview-05-20", "2.5 Flash - Adaptive thinking, cost efficient"),
+                ("gemini-2.0-flash", "2.0 Flash - Next gen features, speed, thinking"),
+                ("gemini-2.0-flash-lite", "2.0 Flash-Lite - Cost efficient, low latency"),
+                ("gemini-1.5-flash", "1.5 Flash - Fast & versatile"),
+                ("gemini-1.5-flash-8b", "1.5 Flash-8B - High volume, lower intelligence")
+            ],
+            "Advanced & Pro": [
+                ("gemini-2.5-pro-preview-05-06", "2.5 Pro - Enhanced reasoning, multimodal"),
+                ("gemini-1.5-pro", "1.5 Pro - Complex reasoning tasks")
+            ],
+            "Specialized": [
+                ("gemini-2.5-flash-preview-native-audio-dialog", "2.5 Flash Audio - Natural conversations"),
+                ("gemini-2.0-flash-preview-image-generation", "2.0 Flash - Image generation"),
+                ("gemini-embedding-exp", "Embedding - Text relatedness")
+            ]
+        }
+        
+        model_category = st.selectbox(
+            "Model Category",
+            list(gemini_models.keys()),
+            help="Choose a category based on your needs"
+        )
+        
+        model_options = gemini_models[model_category]
+        selected_model = st.selectbox(
+            "Select Model",
+            options=[m[0] for m in model_options],
+            format_func=lambda x: next(m[1] for m in model_options if m[0] == x)
+        )
+        
+    elif selected_provider == "OpenAI":
+        api_key = st.text_input("OpenAI API Key", type="password", key="openai_key")
+        
+        # Group models by category
+        openai_models = {
+            "Reasoning Models": [
+                ("o4-mini", "o4-mini - Faster, affordable reasoning"),
+                ("o3", "o3 - Most powerful reasoning model"),
+                ("o3-mini", "o3-mini - Small alternative to o3"),
+                ("o1", "o1 - Previous full reasoning model"),
+                ("o1-pro", "o1-pro - More compute for better responses")
+            ],
+            "Flagship Chat Models": [
+                ("gpt-4.1", "GPT-4.1 - Flagship for complex tasks"),
+                ("gpt-4o", "GPT-4o - Fast, intelligent, flexible"),
+                ("gpt-4o-audio", "GPT-4o Audio - Audio inputs/outputs"),
+                ("chatgpt-4o", "ChatGPT-4o - Used in ChatGPT")
+            ],
+            "Cost-Optimized Models": [
+                ("gpt-4.1-mini", "GPT-4.1 mini - Balanced intelligence/cost"),
+                ("gpt-4.1-nano", "GPT-4.1 nano - Fastest, most cost-effective"),
+                ("gpt-4o-mini", "GPT-4o mini - Small model for focused tasks"),
+                ("gpt-4o-mini-audio", "GPT-4o mini Audio - Small with audio")
+            ]
+        }
+        
+        model_category = st.selectbox(
+            "Model Category",
+            list(openai_models.keys()),
+            help="Choose based on reasoning needs vs cost"
+        )
+        
+        model_options = openai_models[model_category]
+        selected_model = st.selectbox(
+            "Select Model",
+            options=[m[0] for m in model_options],
+            format_func=lambda x: next(m[1] for m in model_options if m[0] == x)
+        )
+        
+    elif selected_provider == "Anthropic Claude":
+        api_key = st.text_input("Anthropic API Key", type="password", key="anthropic_key")
+        
+        # Group models by generation
+        anthropic_models = {
+            "Claude 4 (Latest)": [
+                ("claude-opus-4-20250514", "Opus 4 - Most capable"),
+                ("claude-sonnet-4-20250514", "Sonnet 4 - Balanced performance")
+            ],
+            "Claude 3.5/3.7": [
+                ("claude-3-7-sonnet-latest", "Sonnet 3.7 - Latest 3.7"),
+                ("claude-3-5-sonnet-latest", "Sonnet 3.5 v2 - Latest 3.5"),
+                ("claude-3-5-sonnet-20240620", "Sonnet 3.5 - Previous version"),
+                ("claude-3-5-haiku-latest", "Haiku 3.5 - Fast & efficient")
+            ],
+            "Claude 3": [
+                ("claude-3-opus-latest", "Opus 3 - Most capable v3"),
+                ("claude-3-sonnet-20240229", "Sonnet 3 - Balanced v3"),
+                ("claude-3-haiku-20240307", "Haiku 3 - Fast v3")
+            ]
+        }
+        
+        model_category = st.selectbox(
+            "Model Generation",
+            list(anthropic_models.keys()),
+            help="Newer generations have better capabilities"
+        )
+        
+        model_options = anthropic_models[model_category]
+        selected_model = st.selectbox(
+            "Select Model",
+            options=[m[0] for m in model_options],
+            format_func=lambda x: next(m[1] for m in model_options if m[0] == x)
+        )
+    
     temperature = st.slider("Temperature", 0.0, 1.0, 0.7, 0.1)
     max_tokens = st.number_input("Max Tokens", 100, 4000, 2000)
+    
+    # Model availability note
+    with st.expander("ℹ️ Model Availability Notes"):
+        st.markdown("""
+        **Important Notes:**
+        - Some models may require specific API access or waitlist approval
+        - Audio/Image generation models won't work for text query generation
+        - Embedding models are for similarity, not generation
+        - Newer models (o3, o4, Claude 4) may have limited availability
+        - Check your API tier for model access
+        """)
+        
+        if selected_provider == "OpenAI":
+            st.warning("Note: o3, o4, and GPT-4.1 models may require special access")
+        elif selected_provider == "Google Gemini":
+            st.info("Audio/TTS models are specialized - use text models for query generation")
 
 # Query Configuration
 with st.sidebar.expander("🎯 Query Settings", expanded=True):
     user_query = st.text_area(
         "Primary Query", 
         "What's the best electric SUV for driving up mt rainier?",
-        height=100,
-        help="Enter your main search query"
+        height=100
     )
     
-    # Search Mode Selection with descriptions
     mode = st.radio(
         "Search Mode",
         [
@@ -82,82 +257,50 @@ with st.sidebar.expander("🎯 Query Settings", expanded=True):
             "Research Mode (Deep)",
             "Comparative Analysis",
             "Multi-Perspective"
-        ],
-        help="Select the depth and complexity of search"
+        ]
     )
     
-    # Context Settings
-    include_context = st.checkbox("Include User Context", value=True)
-    include_related = st.checkbox("Generate Related Queries", value=True)
-    include_implied = st.checkbox("Extract Implied Queries", value=True)
-    
-# Advanced Features
-with st.sidebar.expander("🔬 Advanced Features"):
-    enable_confidence = st.checkbox("Show Confidence Scores", value=True)
-    enable_clustering = st.checkbox("Enable Query Clustering", value=True)
-    enable_deduplication = st.checkbox("Remove Duplicate Queries", value=True)
-    save_session = st.checkbox("Save Generation Session", value=True)
+    # Advanced options
+    include_mindmap = st.checkbox("Generate Mind Map", value=True)
+    include_analysis = st.checkbox("Enable Content Analysis", value=True)
 
-# Configure Gemini
-if gemini_key:
-    genai.configure(api_key=gemini_key)
-    model = genai.GenerativeModel(selected_model)
+# Export Settings
+with st.sidebar.expander("📤 Export Settings"):
+    export_format = st.multiselect(
+        "Export Formats",
+        ["CSV", "PDF Report", "JSON"],
+        default=["CSV"]
+    )
+    include_visualizations = st.checkbox("Include Visualizations in PDF", value=True)
+    pdf_size = st.radio("PDF Page Size", ["Letter", "A4"], index=0)
+
+# Configure AI Provider
+if api_key:
+    if selected_provider == "Google Gemini" and GEMINI_AVAILABLE:
+        genai.configure(api_key=api_key)
+        ai_model = genai.GenerativeModel(selected_model)
+    elif selected_provider == "OpenAI" and OPENAI_AVAILABLE:
+        openai.api_key = api_key
+        ai_model = selected_model
+    elif selected_provider == "Anthropic Claude" and ANTHROPIC_AVAILABLE:
+        anthropic_client = anthropic.Anthropic(api_key=api_key)
+        ai_model = selected_model
 else:
-    st.error("⚠️ Please enter your Gemini API Key to proceed.")
+    st.error(f"⚠️ Please enter your {selected_provider} API Key to proceed.")
     st.stop()
 
-# Enhanced Query Types based on Patent
+# Query Types
 QUERY_TYPES = {
-    "reformulation": {
-        "name": "Reformulations",
-        "description": "Alternative phrasings of the original query",
-        "icon": "🔄"
-    },
-    "related": {
-        "name": "Related Queries",
-        "description": "Queries exploring related aspects",
-        "icon": "🔗"
-    },
-    "implicit": {
-        "name": "Implicit Queries",
-        "description": "Hidden questions within the main query",
-        "icon": "💭"
-    },
-    "comparative": {
-        "name": "Comparative Queries",
-        "description": "Comparison-based explorations",
-        "icon": "⚖️"
-    },
-    "entity_expansion": {
-        "name": "Entity Expansions",
-        "description": "Queries focusing on specific entities",
-        "icon": "🎯"
-    },
-    "personalized": {
-        "name": "Personalized Queries",
-        "description": "Context-aware personalized queries",
-        "icon": "👤"
-    },
-    "temporal": {
-        "name": "Temporal Queries",
-        "description": "Time-based variations",
-        "icon": "⏰"
-    },
-    "location": {
-        "name": "Location Queries",
-        "description": "Geographic variations",
-        "icon": "📍"
-    },
-    "technical": {
-        "name": "Technical Deep-Dives",
-        "description": "Technical specifications and details",
-        "icon": "🔧"
-    },
-    "user_intent": {
-        "name": "Intent Clarifications",
-        "description": "Clarifying user's actual intent",
-        "icon": "🎪"
-    }
+    "reformulation": {"name": "Reformulations", "icon": "🔄", "color": "#FF6B6B"},
+    "related": {"name": "Related Queries", "icon": "🔗", "color": "#4ECDC4"},
+    "implicit": {"name": "Implicit Queries", "icon": "💭", "color": "#45B7D1"},
+    "comparative": {"name": "Comparative", "icon": "⚖️", "color": "#FFA07A"},
+    "entity_expansion": {"name": "Entity Focus", "icon": "🎯", "color": "#98D8C8"},
+    "personalized": {"name": "Personalized", "icon": "👤", "color": "#F7DC6F"},
+    "temporal": {"name": "Temporal", "icon": "⏰", "color": "#BB8FCE"},
+    "location": {"name": "Location-based", "icon": "📍", "color": "#85C1E2"},
+    "technical": {"name": "Technical", "icon": "🔧", "color": "#F8C471"},
+    "user_intent": {"name": "Intent", "icon": "🎯", "color": "#82E0AA"}
 }
 
 def generate_query_id(query):
@@ -166,14 +309,9 @@ def generate_query_id(query):
 
 def calculate_confidence_score(query, original_query, query_type):
     """Calculate confidence score for generated query"""
-    # Simple heuristic - in production, use ML model
     base_score = 0.7
-    
-    # Adjust based on similarity to original
     common_words = set(original_query.lower().split()) & set(query.lower().split())
     similarity_bonus = len(common_words) / len(set(original_query.lower().split())) * 0.2
-    
-    # Type-based adjustments
     type_scores = {
         "reformulation": 0.05,
         "related": 0.03,
@@ -182,114 +320,128 @@ def calculate_confidence_score(query, original_query, query_type):
         "entity_expansion": 0.06
     }
     type_bonus = type_scores.get(query_type, 0.02)
-    
     return min(base_score + similarity_bonus + type_bonus, 0.99)
 
-def ENHANCED_QUERY_FANOUT_PROMPT(q, mode, context=None):
-    """Enhanced prompt based on Google's patent methodology"""
-    
-    mode_configs = {
-        "AI Overview (Simple)": {"min": 12, "max": 20, "depth": "basic"},
-        "AI Mode (Complex)": {"min": 20, "max": 35, "depth": "comprehensive"},
-        "Research Mode (Deep)": {"min": 35, "max": 50, "depth": "exhaustive"},
-        "Comparative Analysis": {"min": 15, "max": 25, "depth": "comparative"},
-        "Multi-Perspective": {"min": 25, "max": 40, "depth": "multi-angle"}
-    }
-    
-    config = mode_configs.get(mode, mode_configs["AI Mode (Complex)"])
-    
-    context_str = ""
-    if context:
-        context_str = f"\nUser Context: {json.dumps(context)}\n"
-    
-    return f"""You are an advanced AI search query generation system. Generate diverse search queries based on the input.
-
-Original Query: "{q}"
-Mode: {mode}
-{context_str}
-
-Generate between {config['min']} and {config['max']} queries using these types:
-1. Reformulations - Alternative phrasings
-2. Related Queries - Adjacent topics
-3. Implicit Queries - Hidden questions
-4. Comparative Queries - Comparisons
-5. Entity Expansions - Entity focus
-6. Personalized Queries - Context-aware
-
-Return ONLY a valid JSON object with this structure:
-{{
-  "expanded_queries": [
-    {{
-      "query": "generated query text",
-      "type": "reformulation|related|implicit|comparative|entity_expansion|personalized",
-      "user_intent": "what the user wants to know",
-      "reasoning": "why this query is useful",
-      "priority": "high|medium|low"
-    }}
-  ]
-}}
-
-Important: Return ONLY the JSON object, no other text."""
-
-def clean_json_response(text):
-    """Clean and extract JSON from response"""
-    # Remove any markdown code blocks
-    text = re.sub(r'```json\s*', '', text)
-    text = re.sub(r'```\s*$', '', text)
-    text = re.sub(r'```', '', text)
-    
-    # Find JSON object
-    json_match = re.search(r'\{[\s\S]*\}', text)
-    if json_match:
-        return json_match.group(0)
-    
-    return text.strip()
-
-def generate_enhanced_fanout(query, mode, context=None):
-    """Generate queries using enhanced methodology"""
-    prompt = ENHANCED_QUERY_FANOUT_PROMPT(query, mode, context)
-    
+def get_ai_response(prompt, provider, model):
+    """Unified function to get AI response from any provider"""
     try:
-        with st.spinner("🧠 Generating intelligent query variations..."):
-            response = model.generate_content(
+        if provider == "Google Gemini" and GEMINI_AVAILABLE:
+            response = ai_model.generate_content(
                 prompt,
                 generation_config={
                     "temperature": temperature,
                     "max_output_tokens": max_tokens
                 }
             )
+            return response.text
+        
+        elif provider == "OpenAI" and OPENAI_AVAILABLE:
+            # Use the newer OpenAI client
+            from openai import OpenAI
+            client = OpenAI(api_key=api_key)
             
-            # Clean the response
-            json_text = clean_json_response(response.text)
+            response = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant that generates search queries."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=temperature,
+                max_tokens=max_tokens
+            )
+            return response.choices[0].message.content
+        
+        elif provider == "Anthropic Claude" and ANTHROPIC_AVAILABLE:
+            response = anthropic_client.messages.create(
+                model=model,
+                messages=[
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=temperature,
+                max_tokens=max_tokens
+            )
+            return response.content[0].text
+    
+    except Exception as e:
+        st.error(f"Error with {provider}: {str(e)}")
+        return None
+
+def create_query_prompt(query, mode):
+    """Create prompt for query generation"""
+    mode_configs = {
+        "AI Overview (Simple)": {"min": 12, "max": 20},
+        "AI Mode (Complex)": {"min": 20, "max": 35},
+        "Research Mode (Deep)": {"min": 35, "max": 50},
+        "Comparative Analysis": {"min": 15, "max": 25},
+        "Multi-Perspective": {"min": 25, "max": 40}
+    }
+    
+    config = mode_configs.get(mode, mode_configs["AI Mode (Complex)"])
+    
+    return f"""Generate diverse search queries based on this input query: "{query}"
+
+Create {config['min']} to {config['max']} queries using these types:
+- Reformulations: Alternative phrasings
+- Related: Adjacent topics  
+- Implicit: Hidden questions
+- Comparative: Comparisons
+- Entity Expansions: Entity focus
+- Personalized: Context-aware
+- Temporal: Time-based
+- Location: Geographic
+- Technical: Specifications
+- Intent: User goals
+
+Return ONLY a JSON array:
+[
+  {{
+    "query": "generated query text",
+    "type": "reformulation|related|implicit|comparative|entity_expansion|personalized|temporal|location|technical|user_intent",
+    "intent": "what the user wants",
+    "reasoning": "why useful",
+    "priority": "high|medium|low"
+  }}
+]"""
+
+def clean_json_response(text):
+    """Clean and extract JSON from response"""
+    text = re.sub(r'```json\s*', '', text)
+    text = re.sub(r'```\s*$', '', text)
+    text = re.sub(r'```', '', text)
+    
+    # Find JSON array
+    array_match = re.search(r'\[[\s\S]*\]', text)
+    if array_match:
+        return array_match.group(0)
+    
+    # Find JSON object and wrap in array
+    obj_match = re.search(r'\{[\s\S]*\}', text)
+    if obj_match:
+        return f"[{obj_match.group(0)}]"
+    
+    return text.strip()
+
+def generate_queries(query, mode, provider, model):
+    """Generate queries using selected AI provider"""
+    prompt = create_query_prompt(query, mode)
+    
+    with st.spinner(f"🧠 Generating queries with {provider}..."):
+        response_text = get_ai_response(prompt, provider, model)
+        
+        if not response_text:
+            return []
+        
+        # Clean response
+        json_text = clean_json_response(response_text)
+        
+        try:
+            queries = json.loads(json_text)
             
-            # Debug output
-            with st.expander("🔍 Debug: Raw Response", expanded=False):
-                st.code(response.text[:500] + "..." if len(response.text) > 500 else response.text)
-                st.code(json_text[:500] + "..." if len(json_text) > 500 else json_text)
+            # Ensure it's a list
+            if isinstance(queries, dict):
+                queries = [queries]
             
-            # Parse JSON
-            try:
-                data = json.loads(json_text)
-            except json.JSONDecodeError as e:
-                st.error(f"JSON Parse Error: {str(e)}")
-                st.text("Attempting to fix common issues...")
-                
-                # Try to fix common JSON issues
-                json_text = json_text.replace("'", '"')  # Replace single quotes
-                json_text = re.sub(r',\s*}', '}', json_text)  # Remove trailing commas
-                json_text = re.sub(r',\s*]', ']', json_text)
-                
-                try:
-                    data = json.loads(json_text)
-                except:
-                    # If still failing, create a simple response
-                    st.warning("Using fallback query generation...")
-                    return generate_fallback_queries(query, mode)
-            
-            # Extract queries
-            queries = data.get("expanded_queries", [])
-            
-            # Add IDs and confidence scores
+            # Add IDs and confidence
             for q in queries:
                 q["id"] = generate_query_id(q.get("query", ""))
                 q["confidence"] = calculate_confidence_score(
@@ -300,138 +452,263 @@ def generate_enhanced_fanout(query, mode, context=None):
             
             return queries
             
-    except Exception as e:
-        st.error(f"🔴 Error: {str(e)}")
-        st.warning("Using fallback query generation...")
-        return generate_fallback_queries(query, mode)
+        except json.JSONDecodeError:
+            st.error("Failed to parse AI response")
+            return []
 
-def generate_fallback_queries(query, mode):
-    """Fallback query generation when API fails"""
-    base_queries = []
+def create_mindmap(queries, original_query):
+    """Create an interactive mind map of queries"""
+    G = nx.Graph()
     
-    # Simple transformations
-    words = query.lower().split()
+    # Add central node
+    G.add_node("center", label=original_query[:30] + "...", type="center")
     
-    # Type 1: Reformulations
-    base_queries.append({
-        "id": generate_query_id(f"how to {query}"),
-        "query": f"how to {query}",
-        "type": "reformulation",
-        "user_intent": "Understanding the process",
-        "reasoning": "User might want step-by-step guidance",
-        "priority": "high",
-        "confidence": 0.8
-    })
+    # Add type nodes and query nodes
+    for query in queries:
+        qtype = query.get('type', 'unknown')
+        type_info = QUERY_TYPES.get(qtype, {"name": qtype, "color": "#999"})
+        
+        # Add type node if not exists
+        type_node = f"type_{qtype}"
+        if type_node not in G:
+            G.add_node(type_node, label=type_info['name'], type="category")
+            G.add_edge("center", type_node)
+        
+        # Add query node
+        query_node = query['id']
+        G.add_node(query_node, 
+                  label=query['query'][:40] + "...",
+                  type="query",
+                  full_query=query['query'],
+                  confidence=query.get('confidence', 0))
+        G.add_edge(type_node, query_node)
     
-    base_queries.append({
-        "id": generate_query_id(f"best {query}"),
-        "query": f"best {query}",
-        "type": "reformulation",
-        "user_intent": "Finding optimal options",
-        "reasoning": "User wants recommendations",
-        "priority": "high",
-        "confidence": 0.85
-    })
+    # Create layout
+    pos = nx.spring_layout(G, k=3, iterations=50)
     
-    # Type 2: Related
-    base_queries.append({
-        "id": generate_query_id(f"{query} reviews"),
-        "query": f"{query} reviews",
-        "type": "related",
-        "user_intent": "Reading user experiences",
-        "reasoning": "Reviews provide real-world insights",
-        "priority": "medium",
-        "confidence": 0.75
-    })
+    # Create plotly figure
+    edge_trace = go.Scatter(
+        x=[], y=[],
+        line=dict(width=0.5, color='#888'),
+        hoverinfo='none',
+        mode='lines'
+    )
     
-    base_queries.append({
-        "id": generate_query_id(f"{query} comparison"),
-        "query": f"{query} comparison",
-        "type": "comparative",
-        "user_intent": "Comparing options",
-        "reasoning": "User wants to evaluate alternatives",
-        "priority": "high",
-        "confidence": 0.8
-    })
+    for edge in G.edges():
+        x0, y0 = pos[edge[0]]
+        x1, y1 = pos[edge[1]]
+        edge_trace['x'] += (x0, x1, None)
+        edge_trace['y'] += (y0, y1, None)
     
-    # Type 3: Implicit
-    base_queries.append({
-        "id": generate_query_id(f"{query} cost"),
-        "query": f"{query} cost",
-        "type": "implicit",
-        "user_intent": "Understanding pricing",
-        "reasoning": "Cost is often an implicit concern",
-        "priority": "medium",
-        "confidence": 0.7
-    })
+    node_traces = []
     
-    # Add more based on mode
-    if mode in ["AI Mode (Complex)", "Research Mode (Deep)"]:
-        base_queries.extend([
-            {
-                "id": generate_query_id(f"{query} alternatives"),
-                "query": f"{query} alternatives",
-                "type": "comparative",
-                "user_intent": "Finding alternatives",
-                "reasoning": "User might want other options",
-                "priority": "medium",
-                "confidence": 0.75
-            },
-            {
-                "id": generate_query_id(f"{query} guide 2024"),
-                "query": f"{query} guide 2024",
-                "type": "temporal",
-                "user_intent": "Current information",
-                "reasoning": "User wants up-to-date information",
-                "priority": "high",
-                "confidence": 0.8
-            }
-        ])
+    # Create traces for different node types
+    for node_type, color, size in [("center", "#FF6B6B", 30), 
+                                   ("category", "#4ECDC4", 20), 
+                                   ("query", "#45B7D1", 15)]:
+        node_trace = go.Scatter(
+            x=[], y=[],
+            text=[], 
+            mode='markers+text',
+            textposition="top center",
+            hoverinfo='text',
+            marker=dict(
+                size=size,
+                color=color,
+                line=dict(color='white', width=2)
+            )
+        )
+        
+        for node, data in G.nodes(data=True):
+            if data.get('type') == node_type:
+                x, y = pos[node]
+                node_trace['x'] += (x,)
+                node_trace['y'] += (y,)
+                node_trace['text'] += (data.get('label', ''),)
+                
+                if node_type == "query":
+                    hover_text = f"{data.get('full_query', '')}<br>Confidence: {data.get('confidence', 0):.0%}"
+                    node_trace['hovertext'] = node_trace.get('hovertext', []) + (hover_text,)
+        
+        if node_trace['x']:
+            node_traces.append(node_trace)
     
-    return base_queries
+    fig = go.Figure(data=[edge_trace] + node_traces,
+                   layout=go.Layout(
+                       showlegend=False,
+                       hovermode='closest',
+                       margin=dict(b=0, l=0, r=0, t=0),
+                       xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                       yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                       height=600
+                   ))
+    
+    return fig
 
-def display_generation_metadata():
-    """Display generation metadata in an attractive format"""
-    if hasattr(st.session_state, 'last_results'):
-        results = st.session_state.last_results
+def analyze_content(content, queries):
+    """Analyze content for query matches"""
+    content_lower = content.lower()
+    analysis_results = []
+    
+    for query in queries:
+        query_text = query['query'].lower()
+        query_words = set(query_text.split())
+        content_words = set(content_lower.split())
         
-        col1, col2, col3 = st.columns(3)
+        # Calculate match score
+        common_words = query_words & content_words
+        match_score = len(common_words) / len(query_words) if query_words else 0
         
-        with col1:
-            st.metric("Total Queries", len(results))
+        # Check for exact phrase match
+        exact_match = query_text in content_lower
         
-        with col2:
-            unique_types = len(set(q.get('type', 'unknown') for q in results))
-            st.metric("Query Types", unique_types)
+        # Boost score for exact matches
+        if exact_match:
+            match_score = min(match_score + 0.3, 1.0)
         
-        with col3:
-            avg_confidence = sum(q.get('confidence', 0) for q in results) / len(results) if results else 0
-            st.metric("Avg Confidence", f"{avg_confidence:.0%}")
+        analysis_results.append({
+            'query': query['query'],
+            'type': query['type'],
+            'match_score': match_score,
+            'exact_match': exact_match,
+            'matched_words': list(common_words),
+            'confidence': query.get('confidence', 0)
+        })
+    
+    # Sort by match score
+    analysis_results.sort(key=lambda x: x['match_score'], reverse=True)
+    
+    return analysis_results
 
-def display_query_distribution():
-    """Display query type distribution"""
-    if hasattr(st.session_state, 'last_results'):
-        queries = st.session_state.last_results
+def generate_pdf_report(queries, original_query, analysis_results=None):
+    """Generate a PDF report of the query analysis"""
+    if not REPORTLAB_AVAILABLE:
+        st.error("PDF generation requires reportlab. Install with: pip install reportlab")
+        return None
+    
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter if pdf_size == "Letter" else A4)
+    story = []
+    styles = getSampleStyleSheet()
+    
+    # Title
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#FF6B6B'),
+        alignment=TA_CENTER
+    )
+    story.append(Paragraph("Qforia Pro Query Analysis Report", title_style))
+    story.append(Spacer(1, 20))
+    
+    # Original Query
+    story.append(Paragraph(f"<b>Original Query:</b> {original_query}", styles['Normal']))
+    story.append(Paragraph(f"<b>Generated:</b> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", styles['Normal']))
+    story.append(Paragraph(f"<b>Total Queries Generated:</b> {len(queries)}", styles['Normal']))
+    story.append(Spacer(1, 20))
+    
+    # Query Distribution
+    type_counts = {}
+    for q in queries:
+        qtype = q.get('type', 'unknown')
+        type_counts[qtype] = type_counts.get(qtype, 0) + 1
+    
+    # Create distribution table
+    dist_data = [['Query Type', 'Count', 'Percentage']]
+    for qtype, count in type_counts.items():
+        type_info = QUERY_TYPES.get(qtype, {"name": qtype})
+        percentage = f"{(count/len(queries)*100):.1f}%"
+        dist_data.append([type_info['name'], str(count), percentage])
+    
+    dist_table = Table(dist_data)
+    dist_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 14),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+    
+    story.append(Paragraph("<b>Query Distribution</b>", styles['Heading2']))
+    story.append(dist_table)
+    story.append(Spacer(1, 20))
+    
+    # Generated Queries
+    story.append(Paragraph("<b>Generated Queries</b>", styles['Heading2']))
+    
+    # Group by type
+    grouped = {}
+    for q in queries:
+        qtype = q.get('type', 'unknown')
+        if qtype not in grouped:
+            grouped[qtype] = []
+        grouped[qtype].append(q)
+    
+    for qtype, type_queries in grouped.items():
+        type_info = QUERY_TYPES.get(qtype, {"name": qtype, "icon": "❓"})
+        story.append(Paragraph(f"{type_info['icon']} <b>{type_info['name']}</b>", styles['Heading3']))
         
-        # Count by type
-        type_counts = {}
-        for q in queries:
-            qtype = q.get('type', 'unknown')
-            type_counts[qtype] = type_counts.get(qtype, 0) + 1
+        for q in type_queries:
+            story.append(Paragraph(f"• {q['query']}", styles['Normal']))
+            story.append(Paragraph(f"  <i>Intent: {q.get('intent', 'N/A')}</i>", styles['Normal']))
+            story.append(Paragraph(f"  <i>Confidence: {q.get('confidence', 0):.0%}</i>", styles['Normal']))
+            story.append(Spacer(1, 10))
+    
+    # Content Analysis Results
+    if analysis_results:
+        story.append(PageBreak())
+        story.append(Paragraph("<b>Content Analysis Results</b>", styles['Heading2']))
         
-        # Create DataFrame for visualization
-        df = pd.DataFrame([
-            {"Type": QUERY_TYPES.get(k, {}).get('name', k), 
-             "Count": v,
-             "Icon": QUERY_TYPES.get(k, {}).get('icon', '❓')}
-            for k, v in type_counts.items()
-        ])
+        # Top matches
+        top_matches = [r for r in analysis_results if r['match_score'] > 0.3][:10]
         
-        if not df.empty:
-            st.bar_chart(df.set_index('Type')['Count'])
+        if top_matches:
+            match_data = [['Query', 'Match Score', 'Type']]
+            for match in top_matches:
+                score_str = f"{match['match_score']:.0%}"
+                match_data.append([
+                    match['query'][:50] + "...",
+                    score_str,
+                    QUERY_TYPES.get(match['type'], {}).get('name', match['type'])
+                ])
+            
+            match_table = Table(match_data)
+            match_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black)
+            ]))
+            
+            story.append(match_table)
+    
+    # Build PDF
+    doc.build(story)
+    buffer.seek(0)
+    
+    return buffer
+
+def export_to_csv(queries):
+    """Export queries to CSV format"""
+    df = pd.DataFrame(queries)
+    
+    # Reorder columns for better readability
+    column_order = ['query', 'type', 'intent', 'reasoning', 'priority', 'confidence']
+    available_columns = [col for col in column_order if col in df.columns]
+    df = df[available_columns]
+    
+    # Add type names
+    df['type_name'] = df['type'].apply(lambda x: QUERY_TYPES.get(x, {}).get('name', x))
+    
+    return df.to_csv(index=False)
 
 # Main UI
-tabs = st.tabs(["🚀 Generate", "📊 Results", "🔍 Analysis", "📚 History"])
+tabs = st.tabs(["🚀 Generate", "📊 Results", "🔍 Content Analysis", "🗺️ Mind Map", "📚 History"])
 
 with tabs[0]:  # Generate Tab
     col1, col2 = st.columns([3, 1])
@@ -440,33 +717,17 @@ with tabs[0]:  # Generate Tab
         st.markdown("### 🎯 Query Configuration")
         st.info(f"**Current Query:** {user_query}")
         st.info(f"**Mode:** {mode}")
-        
-        # Context Builder
-        if include_context:
-            with st.expander("📝 Add Context (Optional)"):
-                context = {
-                    "user_location": st.text_input("Location", "Seattle, WA"),
-                    "budget": st.select_slider("Budget Range", 
-                                             options=["$", "$$", "$$$", "$$$$"],
-                                             value="$$$"),
-                    "timeframe": st.selectbox("Timeframe", 
-                                            ["Immediate", "3 months", "6 months", "1 year"]),
-                }
-        else:
-            context = None
+        st.info(f"**Provider:** {selected_provider} ({selected_model})")
     
     with col2:
         st.markdown("### 🎮 Actions")
         
-        if st.button("🚀 Generate Fan-Out", type="primary", use_container_width=True):
+        if st.button("🚀 Generate Queries", type="primary", use_container_width=True):
             if not user_query.strip():
                 st.warning("⚠️ Please enter a query.")
             else:
-                # Clear previous results
-                st.session_state.selected_queries = []
-                
                 # Generate queries
-                results = generate_enhanced_fanout(user_query, mode, context)
+                results = generate_queries(user_query, mode, selected_provider, selected_model)
                 
                 if results:
                     st.session_state.last_results = results
@@ -474,213 +735,228 @@ with tabs[0]:  # Generate Tab
                         "timestamp": datetime.now().isoformat(),
                         "query": user_query,
                         "mode": mode,
+                        "provider": selected_provider,
+                        "model": selected_model,
                         "results_count": len(results)
                     })
                     
-                    # Save session if enabled
-                    if save_session:
-                        st.session_state.generation_sessions.append({
-                            "id": generate_query_id(user_query + str(time.time())),
-                            "timestamp": datetime.now().isoformat(),
-                            "original_query": user_query,
-                            "mode": mode,
-                            "context": context,
-                            "results": results
-                        })
-                    
-                    st.success(f"✅ Generated {len(results)} intelligent queries!")
+                    st.success(f"✅ Generated {len(results)} queries!")
                     st.balloons()
 
 with tabs[1]:  # Results Tab
-    if hasattr(st.session_state, 'last_results') and st.session_state.last_results:
+    if st.session_state.last_results:
         st.markdown("### 📋 Generated Queries")
         
-        # Display metadata
-        display_generation_metadata()
-        
-        # Filtering options
-        col1, col2, col3 = st.columns(3)
+        # Metrics
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
-            filter_type = st.multiselect(
-                "Filter by Type",
-                options=list(QUERY_TYPES.keys()),
-                format_func=lambda x: f"{QUERY_TYPES[x]['icon']} {QUERY_TYPES[x]['name']}"
-            )
+            st.metric("Total Queries", len(st.session_state.last_results))
         with col2:
-            filter_priority = st.multiselect(
-                "Filter by Priority",
-                options=["high", "medium", "low"]
-            )
+            unique_types = len(set(q.get('type', 'unknown') for q in st.session_state.last_results))
+            st.metric("Query Types", unique_types)
         with col3:
-            min_confidence = st.slider("Min Confidence", 0.0, 1.0, 0.0, 0.05)
+            avg_confidence = sum(q.get('confidence', 0) for q in st.session_state.last_results) / len(st.session_state.last_results)
+            st.metric("Avg Confidence", f"{avg_confidence:.0%}")
+        with col4:
+            high_priority = len([q for q in st.session_state.last_results if q.get('priority') == 'high'])
+            st.metric("High Priority", high_priority)
         
-        # Apply filters
-        filtered_results = st.session_state.last_results
-        if filter_type:
-            filtered_results = [q for q in filtered_results if q.get('type') in filter_type]
-        if filter_priority:
-            filtered_results = [q for q in filtered_results if q.get('priority') in filter_priority]
-        if min_confidence > 0:
-            filtered_results = [q for q in filtered_results if q.get('confidence', 0) >= min_confidence]
-        
-        # Display queries in an interactive format
-        st.markdown(f"**Showing {len(filtered_results)} of {len(st.session_state.last_results)} queries**")
-        
-        # Group by type
+        # Display queries grouped by type
         grouped_queries = {}
-        for q in filtered_results:
+        for q in st.session_state.last_results:
             qtype = q.get('type', 'unknown')
             if qtype not in grouped_queries:
                 grouped_queries[qtype] = []
             grouped_queries[qtype].append(q)
         
-        # Display grouped queries
         for qtype, queries in grouped_queries.items():
-            type_info = QUERY_TYPES.get(qtype, {"name": qtype, "icon": "❓", "description": ""})
+            type_info = QUERY_TYPES.get(qtype, {"name": qtype, "icon": "❓", "color": "#999"})
             
-            with st.expander(f"{type_info['icon']} {type_info['name']} ({len(queries)} queries)", 
-                           expanded=True):
-                st.markdown(f"*{type_info['description']}*")
-                
+            with st.expander(f"{type_info['icon']} {type_info['name']} ({len(queries)} queries)", expanded=True):
                 for idx, q in enumerate(queries):
-                    col1, col2, col3 = st.columns([0.7, 0.2, 0.1])
+                    col1, col2 = st.columns([4, 1])
                     
                     with col1:
-                        # Checkbox for selection
-                        selected = st.checkbox(
-                            q['query'],
-                            key=f"query_{q.get('id', idx)}_{idx}",
-                            value=q.get('id') in st.session_state.selected_queries
-                        )
-                        
-                        if selected and q.get('id') not in st.session_state.selected_queries:
-                            st.session_state.selected_queries.append(q.get('id'))
-                        elif not selected and q.get('id') in st.session_state.selected_queries:
-                            st.session_state.selected_queries.remove(q.get('id'))
-                        
-                        # Show details
-                        with st.container():
-                            st.caption(f"💡 **Intent:** {q.get('user_intent', 'N/A')}")
-                            st.caption(f"📝 **Reasoning:** {q.get('reasoning', 'N/A')}")
+                        st.markdown(f"**{q['query']}**")
+                        st.caption(f"💡 {q.get('intent', 'N/A')} | 📝 {q.get('reasoning', 'N/A')}")
                     
                     with col2:
-                        # Priority badge
-                        priority = q.get('priority', 'medium')
                         priority_colors = {"high": "🔴", "medium": "🟡", "low": "🟢"}
-                        st.markdown(f"{priority_colors.get(priority, '⚪')} **{priority.upper()}**")
-                    
-                    with col3:
-                        # Confidence score
-                        confidence = q.get('confidence', 0)
-                        st.metric("Confidence", f"{confidence:.0%}", label_visibility="collapsed")
+                        st.markdown(f"{priority_colors.get(q.get('priority', 'medium'), '⚪')} **{q.get('priority', 'medium').upper()}**")
+                        st.markdown(f"**{q.get('confidence', 0):.0%}** confidence")
         
-        # Export buttons
+        # Export section
         st.markdown("---")
-        col1, col2 = st.columns(2)
+        st.markdown("### 📤 Export Options")
+        
+        col1, col2, col3 = st.columns(3)
         
         with col1:
-            if st.button("📊 Export All Results"):
-                df = pd.DataFrame(st.session_state.last_results)
-                csv = df.to_csv(index=False)
+            if "CSV" in export_format:
+                csv_data = export_to_csv(st.session_state.last_results)
                 st.download_button(
-                    "Download CSV",
-                    data=csv.encode('utf-8'),
-                    file_name=f"qforia_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    "📊 Download CSV",
+                    data=csv_data,
+                    file_name=f"qforia_queries_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                     mime="text/csv"
+                )
+        
+        with col2:
+            if "PDF Report" in export_format and REPORTLAB_AVAILABLE:
+                pdf_buffer = generate_pdf_report(st.session_state.last_results, user_query)
+                if pdf_buffer:
+                    st.download_button(
+                        "📄 Download PDF Report",
+                        data=pdf_buffer,
+                        file_name=f"qforia_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                        mime="application/pdf"
+                    )
+        
+        with col3:
+            if "JSON" in export_format:
+                json_data = json.dumps(st.session_state.last_results, indent=2)
+                st.download_button(
+                    "📋 Download JSON",
+                    data=json_data,
+                    file_name=f"qforia_queries_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                    mime="application/json"
                 )
     
     else:
         st.info("👆 Generate queries first to see results here.")
 
-with tabs[2]:  # Analysis Tab
-    if hasattr(st.session_state, 'last_results') and st.session_state.last_results:
-        st.markdown("### 📊 Query Analysis")
+with tabs[2]:  # Content Analysis Tab
+    if st.session_state.last_results:
+        st.markdown("### 🔍 Content Analysis")
+        st.markdown("Analyze how well your content matches the generated queries")
         
-        # Distribution visualization
-        st.markdown("#### Query Type Distribution")
-        display_query_distribution()
+        content_input = st.text_area(
+            "Paste your content here",
+            height=200,
+            placeholder="Paste the content you want to analyze against the generated queries..."
+        )
         
-        # Confidence distribution
-        st.markdown("#### Confidence Score Distribution")
-        confidence_scores = [q.get('confidence', 0) for q in st.session_state.last_results]
-        
-        # Create bins for confidence scores
-        bins = [0, 0.5, 0.7, 0.85, 1.0]
-        labels = ['Low (0-50%)', 'Medium (50-70%)', 'High (70-85%)', 'Very High (85-100%)']
-        
-        # Count queries in each bin
-        confidence_dist = pd.cut(confidence_scores, bins=bins, labels=labels).value_counts()
-        st.bar_chart(confidence_dist)
-        
-        # Priority distribution
-        st.markdown("#### Priority Distribution")
-        priority_counts = {}
-        for q in st.session_state.last_results:
-            priority = q.get('priority', 'medium')
-            priority_counts[priority] = priority_counts.get(priority, 0) + 1
-        
-        priority_df = pd.DataFrame.from_dict(priority_counts, orient='index', columns=['Count'])
-        st.bar_chart(priority_df)
-    
+        if st.button("🔬 Analyze Content"):
+            if content_input:
+                analysis = analyze_content(content_input, st.session_state.last_results)
+                st.session_state.content_analysis = analysis
+                
+                # Display results
+                st.markdown("#### 📊 Analysis Results")
+                
+                # Summary metrics
+                col1, col2, col3 = st.columns(3)
+                
+                high_matches = [a for a in analysis if a['match_score'] > 0.7]
+                medium_matches = [a for a in analysis if 0.3 < a['match_score'] <= 0.7]
+                low_matches = [a for a in analysis if a['match_score'] <= 0.3]
+                
+                with col1:
+                    st.metric("High Matches (>70%)", len(high_matches))
+                with col2:
+                    st.metric("Medium Matches (30-70%)", len(medium_matches))
+                with col3:
+                    st.metric("Low Matches (<30%)", len(low_matches))
+                
+                # Detailed results
+                st.markdown("#### 🎯 Top Matching Queries")
+                
+                for match in analysis[:20]:  # Show top 20
+                    score = match['match_score']
+                    
+                    if score > 0.7:
+                        score_class = "high-match"
+                    elif score > 0.3:
+                        score_class = "medium-match"
+                    else:
+                        score_class = "low-match"
+                    
+                    col1, col2, col3 = st.columns([3, 1, 1])
+                    
+                    with col1:
+                        st.markdown(f"**{match['query']}**")
+                        if match['matched_words']:
+                            st.caption(f"Matched words: {', '.join(match['matched_words'][:5])}")
+                    
+                    with col2:
+                        st.markdown(f"<span class='match-score {score_class}'>{score:.0%}</span>", 
+                                  unsafe_allow_html=True)
+                    
+                    with col3:
+                        type_info = QUERY_TYPES.get(match['type'], {})
+                        st.markdown(f"{type_info.get('icon', '❓')} {type_info.get('name', match['type'])}")
+                
+                # Export analysis
+                if st.button("📊 Export Analysis as CSV"):
+                    analysis_df = pd.DataFrame(analysis)
+                    csv = analysis_df.to_csv(index=False)
+                    st.download_button(
+                        "Download Analysis",
+                        data=csv,
+                        file_name=f"content_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                        mime="text/csv"
+                    )
+            else:
+                st.warning("Please enter content to analyze")
     else:
-        st.info("👆 Generate queries first to see analysis here.")
+        st.info("👆 Generate queries first to enable content analysis.")
 
-with tabs[3]:  # History Tab
+with tabs[3]:  # Mind Map Tab
+    if st.session_state.last_results and include_mindmap:
+        st.markdown("### 🗺️ Query Mind Map")
+        st.markdown("Interactive visualization of query relationships")
+        
+        # Create and display mind map
+        mindmap_fig = create_mindmap(st.session_state.last_results, user_query)
+        st.plotly_chart(mindmap_fig, use_container_width=True)
+        
+        # Export options
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("📸 Save Mind Map as Image"):
+                # Convert to image
+                img_bytes = mindmap_fig.to_image(format="png", width=1200, height=800)
+                st.download_button(
+                    "Download PNG",
+                    data=img_bytes,
+                    file_name=f"mindmap_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png",
+                    mime="image/png"
+                )
+        
+        with col2:
+            if st.button("📊 Save as Interactive HTML"):
+                html_str = mindmap_fig.to_html(include_plotlyjs='cdn')
+                st.download_button(
+                    "Download HTML",
+                    data=html_str,
+                    file_name=f"mindmap_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html",
+                    mime="text/html"
+                )
+    else:
+        st.info("👆 Generate queries with mind map option enabled.")
+
+with tabs[4]:  # History Tab
     st.markdown("### 📚 Query Generation History")
     
-    if st.session_state.generation_sessions:
-        # Session selector
-        session_options = [
-            f"{s['timestamp']} - {s['original_query'][:50]}... ({len(s['results'])} queries)"
-            for s in reversed(st.session_state.generation_sessions)
-        ]
-        
-        if session_options:
-            selected_session_idx = st.selectbox(
-                "Select a session to review",
-                range(len(session_options)),
-                format_func=lambda x: session_options[x]
-            )
-            
-            if selected_session_idx is not None:
-                # Get session (accounting for reversal)
-                actual_idx = len(st.session_state.generation_sessions) - 1 - selected_session_idx
-                session = st.session_state.generation_sessions[actual_idx]
-                
-                # Display session details
+    if st.session_state.query_history:
+        # Display history in reverse chronological order
+        for idx, entry in enumerate(reversed(st.session_state.query_history[-10:])):  # Show last 10
+            with st.expander(f"{entry['timestamp']} - {entry['query'][:50]}... ({entry['results_count']} queries)"):
                 col1, col2 = st.columns(2)
                 with col1:
-                    st.markdown(f"**Original Query:** {session['original_query']}")
-                    st.markdown(f"**Mode:** {session['mode']}")
-                    st.markdown(f"**Timestamp:** {session['timestamp']}")
-                
+                    st.markdown(f"**Query:** {entry['query']}")
+                    st.markdown(f"**Mode:** {entry['mode']}")
                 with col2:
-                    st.markdown(f"**Total Queries:** {len(session['results'])}")
-                    if session.get('context'):
-                        st.markdown("**Context:** ✅ Included")
-                    else:
-                        st.markdown("**Context:** ❌ Not included")
-                
-                # Load session button
-                if st.button("📂 Load This Session"):
-                    st.session_state.last_results = session['results']
-                    st.success("✅ Session loaded! Go to Results tab.")
-                
-                # Display session queries
-                with st.expander("View Queries from This Session"):
-                    df = pd.DataFrame(session['results'])
-                    if not df.empty:
-                        display_cols = ['query', 'type', 'priority']
-                        if 'confidence' in df.columns:
-                            display_cols.append('confidence')
-                        st.dataframe(df[display_cols], use_container_width=True)
+                    st.markdown(f"**Provider:** {entry.get('provider', 'N/A')}")
+                    st.markdown(f"**Model:** {entry.get('model', 'N/A')}")
     else:
-        st.info("No generation history yet. Start generating queries!")
+        st.info("No history yet. Start generating queries!")
 
 # Footer
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: #666;'>
-    <p>Qforia Pro v2.0 | Powered by Advanced Query Intelligence</p>
+    <p>Qforia Pro v3.0 | Multi-Provider AI Query Intelligence</p>
+    <p>Supporting Google Gemini, OpenAI, and Anthropic Claude</p>
 </div>
 """, unsafe_allow_html=True)
