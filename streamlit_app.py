@@ -207,7 +207,7 @@ with st.sidebar.expander("🎯 Personalization (Optional)", expanded=False):
     with col1:
         age = st.text_input("Age/Age Range", placeholder="e.g., 25-34", key="age_input")
         gender = st.selectbox("Gender", ["Not specified", "Male", "Female", "Non-binary", "Other"], key="gender_input")
-        location = st.text_input("Location", placeholder="e.g., New York, USA", key="location_input")
+        location = st.text_input("Location", placeholder="e.g., Milwaukee, WI", key="location_input")
     
     with col2:
         income_range = st.text_input("Income Range", placeholder="e.g., $50k-$75k", key="income_input")
@@ -216,8 +216,8 @@ with st.sidebar.expander("🎯 Personalization (Optional)", expanded=False):
     
     # Interests & Preferences
     st.markdown("**Interests & Preferences**")
-    interests = st.text_area("Interests/Hobbies", placeholder="e.g., hiking, cooking, tech gadgets", height=60, key="interests_input")
-    favorite_brands = st.text_input("Favorite Brands", placeholder="e.g., Apple, Nike, Tesla", key="brands_input")
+    interests = st.text_area("Interests/Hobbies", placeholder="e.g., football, hiking, cooking", height=60, key="interests_input")
+    favorite_brands = st.text_input("Favorite Brands", placeholder="e.g., Packers, Apple, Nike", key="brands_input")
     
     # Behavioral Context
     st.markdown("**Behavioral Context**")
@@ -258,7 +258,7 @@ with st.sidebar.expander("🎯 Personalization (Optional)", expanded=False):
 with st.sidebar.expander("🎯 Query Settings", expanded=True):
     user_query = st.text_area(
         "Primary Query", 
-        "What's the best electric SUV for driving up mt rainier?",
+        "What's the best electric SUV for driving from Milwaukee to Green Bay?",
         height=100
     )
     
