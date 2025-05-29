@@ -6,6 +6,7 @@ import time
 from datetime import datetime
 import hashlib
 import plotly.graph_objects as go
+import plotly.express as px
 from plotly.subplots import make_subplots
 import networkx as nx
 from io import BytesIO
@@ -457,100 +458,219 @@ def generate_queries(query, mode, provider, model):
             st.error("Failed to parse AI response")
             return []
 
-def create_mindmap(queries, original_query):
-    """Create an interactive mind map of queries"""
-    G = nx.Graph()
+def create_hierarchical_visualization(queries, original_query, content_analysis=None):
+    """Create a hierarchical visualization of queries using treemap"""
+    import plotly.express as px
     
-    # Add central node
-    G.add_node("center", label=original_query[:30] + "...", type="center")
+    # Build data for treemap
+    data = []
     
-    # Add type nodes and query nodes
+    # Add root
+    data.append({
+        'names': original_query,
+        'parents': '',
+        'values': 1,
+        'text': original_query,
+        'confidence': 1.0,
+        'match_score': 1.0 if content_analysis else None
+    })
+    
+    # Group queries by type
+    type_counts = {}
     for query in queries:
         qtype = query.get('type', 'unknown')
-        type_info = QUERY_TYPES.get(qtype, {"name": qtype, "color": "#999"})
-        
-        # Add type node if not exists
-        type_node = f"type_{qtype}"
-        if type_node not in G:
-            G.add_node(type_node, label=type_info['name'], type="category")
-            G.add_edge("center", type_node)
-        
-        # Add query node
-        query_node = query['id']
-        G.add_node(query_node, 
-                  label=query['query'][:40] + "...",
-                  type="query",
-                  full_query=query['query'],
-                  confidence=query.get('confidence', 0))
-        G.add_edge(type_node, query_node)
+        type_counts[qtype] = type_counts.get(qtype, 0) + 1
     
-    # Create layout
-    pos = nx.spring_layout(G, k=3, iterations=50)
+    # Add type categories
+    for qtype, count in type_counts.items():
+        type_info = QUERY_TYPES.get(qtype, {"name": qtype, "icon": "❓"})
+        data.append({
+            'names': f"{type_info['icon']} {type_info['name']}",
+            'parents': original_query,
+            'values': count,
+            'text': type_info['name'],
+            'confidence': 0.9,
+            'match_score': None
+        })
     
-    # Create plotly figure
-    edge_trace = go.Scatter(
-        x=[], y=[],
-        line=dict(width=0.5, color='#888'),
-        hoverinfo='none',
-        mode='lines'
+    # Add individual queries
+    for query in queries:
+        qtype = query.get('type', 'unknown')
+        type_info = QUERY_TYPES.get(qtype, {"name": qtype, "icon": "❓"})
+        parent_name = f"{type_info['icon']} {type_info['name']}"
+        
+        # Get match score if content analysis exists
+        match_score = None
+        if content_analysis:
+            for analysis in content_analysis:
+                if analysis['query'] == query['query']:
+                    match_score = analysis['match_score']
+                    break
+        
+        # Create display text with confidence and match score
+        display_text = query['query']
+        if match_score is not None:
+            display_text += f" [{match_score:.0%} match]"
+        
+        data.append({
+            'names': display_text,
+            'parents': parent_name,
+            'values': 1,
+            'text': query['query'],
+            'confidence': query.get('confidence', 0),
+            'match_score': match_score
+        })
+    
+    # Create treemap
+    df = pd.DataFrame(data)
+    
+    # Create custom hover text
+    df['hover_text'] = df.apply(lambda row: 
+        f"<b>{row['text']}</b><br>" +
+        f"Confidence: {row['confidence']:.0%}<br>" +
+        (f"Content Match: {row['match_score']:.0%}" if row['match_score'] is not None else ""),
+        axis=1
     )
     
-    for edge in G.edges():
-        x0, y0 = pos[edge[0]]
-        x1, y1 = pos[edge[1]]
-        edge_trace['x'] += (x0, x1, None)
-        edge_trace['y'] += (y0, y1, None)
+    # Color based on confidence or match score
+    color_column = 'match_score' if content_analysis else 'confidence'
     
-    node_traces = []
+    fig = px.treemap(
+        df,
+        names='names',
+        parents='parents',
+        values='values',
+        color=color_column,
+        hover_data={'hover_text': True, 'names': False, 'parents': False, 'values': False},
+        color_continuous_scale='RdYlGn',
+        range_color=[0, 1]
+    )
     
-    # Create traces for different node types
-    for node_type, color, size in [("center", "#FF6B6B", 30), 
-                                   ("category", "#4ECDC4", 20), 
-                                   ("query", "#45B7D1", 15)]:
-        node_x = []
-        node_y = []
-        node_text = []
-        hover_text = []
+    fig.update_traces(
+        textinfo="label",
+        hovertemplate='%{customdata[0]}<extra></extra>',
+        marker=dict(cornerradius=5)
+    )
+    
+    fig.update_layout(
+        margin=dict(t=50, l=25, r=25, b=25),
+        height=700,
+        font=dict(size=12)
+    )
+    
+    return fig
+
+def create_sunburst_visualization(queries, original_query, content_analysis=None):
+    """Create a sunburst visualization of queries"""
+    import plotly.express as px
+    
+    # Build data for sunburst
+    data = []
+    
+    # Group queries by type
+    for query in queries:
+        qtype = query.get('type', 'unknown')
+        type_info = QUERY_TYPES.get(qtype, {"name": qtype, "icon": "❓", "color": "#999"})
         
-        for node, data in G.nodes(data=True):
-            if data.get('type') == node_type:
-                x, y = pos[node]
-                node_x.append(x)
-                node_y.append(y)
-                node_text.append(data.get('label', ''))
-                
-                if node_type == "query":
-                    hover = f"{data.get('full_query', '')}<br>Confidence: {data.get('confidence', 0):.0%}"
-                    hover_text.append(hover)
-                else:
-                    hover_text.append(data.get('label', ''))
+        # Get match score if content analysis exists
+        match_score = None
+        if content_analysis:
+            for analysis in content_analysis:
+                if analysis['query'] == query['query']:
+                    match_score = analysis['match_score']
+                    break
         
-        if node_x:  # Only create trace if there are nodes
-            node_trace = go.Scatter(
-                x=node_x,
-                y=node_y,
-                text=node_text,
-                hovertext=hover_text,
-                mode='markers+text',
-                textposition="top center",
-                hoverinfo='text',
-                marker=dict(
-                    size=size,
-                    color=color,
-                    line=dict(color='white', width=2)
-                )
-            )
-            node_traces.append(node_trace)
+        # Create display text
+        display_text = query['query']
+        if match_score is not None:
+            display_text += f" ({match_score:.0%})"
+        
+        data.append({
+            'labels': display_text,
+            'parents': f"{type_info['icon']} {type_info['name']}",
+            'values': 1,
+            'confidence': query.get('confidence', 0),
+            'match_score': match_score,
+            'priority': query.get('priority', 'medium'),
+            'full_query': query['query']
+        })
     
-    fig = go.Figure(data=[edge_trace] + node_traces,
-                   layout=go.Layout(
-                       showlegend=False,
-                       hovermode='closest',
-                       margin=dict(b=0, l=0, r=0, t=0),
-                       xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                       yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                       height=600
-                   ))
+    # Add type categories
+    type_summaries = {}
+    for query in queries:
+        qtype = query.get('type', 'unknown')
+        type_info = QUERY_TYPES.get(qtype, {"name": qtype, "icon": "❓"})
+        type_name = f"{type_info['icon']} {type_info['name']}"
+        
+        if type_name not in type_summaries:
+            type_summaries[type_name] = {
+                'count': 0,
+                'total_confidence': 0,
+                'total_match': 0,
+                'has_match': False
+            }
+        
+        type_summaries[type_name]['count'] += 1
+        type_summaries[type_name]['total_confidence'] += query.get('confidence', 0)
+        
+        if content_analysis:
+            for analysis in content_analysis:
+                if analysis['query'] == query['query']:
+                    type_summaries[type_name]['total_match'] += analysis['match_score']
+                    type_summaries[type_name]['has_match'] = True
+                    break
+    
+    # Add type nodes
+    for type_name, summary in type_summaries.items():
+        avg_confidence = summary['total_confidence'] / summary['count']
+        avg_match = summary['total_match'] / summary['count'] if summary['has_match'] else None
+        
+        data.append({
+            'labels': type_name,
+            'parents': 'Query Analysis',
+            'values': summary['count'],
+            'confidence': avg_confidence,
+            'match_score': avg_match,
+            'priority': 'high',
+            'full_query': f"{summary['count']} queries"
+        })
+    
+    # Add root
+    data.append({
+        'labels': 'Query Analysis',
+        'parents': '',
+        'values': len(queries),
+        'confidence': 1.0,
+        'match_score': None,
+        'priority': 'high',
+        'full_query': original_query
+    })
+    
+    df = pd.DataFrame(data)
+    
+    # Color based on match score or confidence
+    color_column = 'match_score' if content_analysis and any(d['match_score'] is not None for d in data) else 'confidence'
+    
+    fig = px.sunburst(
+        df,
+        names='labels',
+        parents='parents',
+        values='values',
+        color=color_column,
+        hover_data={'full_query': True, 'confidence': ':.0%', 'match_score': ':.0%'},
+        color_continuous_scale='RdYlGn',
+        range_color=[0, 1]
+    )
+    
+    fig.update_traces(
+        textinfo="label",
+        hovertemplate='<b>%{label}</b><br>Query: %{customdata[0]}<br>Confidence: %{customdata[1]}<br>Match: %{customdata[2]}<extra></extra>'
+    )
+    
+    fig.update_layout(
+        margin=dict(t=50, l=25, r=25, b=25),
+        height=700
+    )
     
     return fig
 
@@ -717,7 +837,7 @@ def export_to_csv(queries):
     return df.to_csv(index=False)
 
 # Main UI
-tabs = st.tabs(["🚀 Generate", "📊 Results", "🔍 Content Analysis", "🗺️ Mind Map", "📚 History"])
+tabs = st.tabs(["🚀 Generate", "📊 Results", "🔍 Content Analysis", "🗺️ Visualization", "📚 History"])
 
 with tabs[0]:  # Generate Tab
     col1, col2 = st.columns([3, 1])
@@ -912,37 +1032,90 @@ with tabs[2]:  # Content Analysis Tab
 
 with tabs[3]:  # Mind Map Tab
     if st.session_state.last_results and include_mindmap:
-        st.markdown("### 🗺️ Query Mind Map")
-        st.markdown("Interactive visualization of query relationships")
+        st.markdown("### 🗺️ Query Visualization")
+        st.markdown("Interactive hierarchical view of query relationships")
         
-        # Create and display mind map
-        mindmap_fig = create_mindmap(st.session_state.last_results, user_query)
-        st.plotly_chart(mindmap_fig, use_container_width=True)
+        # Visualization type selector
+        viz_type = st.radio(
+            "Visualization Type",
+            ["Treemap", "Sunburst"],
+            horizontal=True,
+            help="Choose your preferred visualization style"
+        )
+        
+        # Check if content analysis has been run
+        include_match_scores = st.checkbox(
+            "Show Content Match Scores",
+            value=bool(st.session_state.content_analysis),
+            disabled=not bool(st.session_state.content_analysis),
+            help="Run content analysis first to see match scores"
+        )
+        
+        # Create visualization
+        if viz_type == "Treemap":
+            viz_fig = create_hierarchical_visualization(
+                st.session_state.last_results, 
+                user_query,
+                st.session_state.content_analysis if include_match_scores else None
+            )
+        else:  # Sunburst
+            viz_fig = create_sunburst_visualization(
+                st.session_state.last_results,
+                user_query,
+                st.session_state.content_analysis if include_match_scores else None
+            )
+        
+        # Display visualization
+        st.plotly_chart(viz_fig, use_container_width=True)
+        
+        # Legend
+        if include_match_scores and st.session_state.content_analysis:
+            st.markdown("#### 📊 Color Scale")
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.success("🟢 High Match (>70%)")
+            with col2:
+                st.warning("🟡 Medium Match (30-70%)")
+            with col3:
+                st.error("🔴 Low Match (<30%)")
+        else:
+            st.info("💡 Colors represent confidence scores. Enable content match scores after running content analysis.")
         
         # Export options
-        col1, col2 = st.columns(2)
+        st.markdown("#### 📤 Export Visualization")
+        col1, col2, col3 = st.columns(3)
+        
         with col1:
-            if st.button("📸 Save Mind Map as Image"):
-                # Convert to image
-                img_bytes = mindmap_fig.to_image(format="png", width=1200, height=800)
+            if st.button("📸 Save as PNG"):
+                img_bytes = viz_fig.to_image(format="png", width=1600, height=1200, scale=2)
                 st.download_button(
-                    "Download PNG",
+                    "Download High-Res PNG",
                     data=img_bytes,
-                    file_name=f"mindmap_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png",
+                    file_name=f"query_visualization_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png",
                     mime="image/png"
                 )
         
         with col2:
             if st.button("📊 Save as Interactive HTML"):
-                html_str = mindmap_fig.to_html(include_plotlyjs='cdn')
+                html_str = viz_fig.to_html(include_plotlyjs='cdn')
                 st.download_button(
-                    "Download HTML",
+                    "Download Interactive HTML",
                     data=html_str,
-                    file_name=f"mindmap_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html",
+                    file_name=f"query_visualization_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html",
                     mime="text/html"
                 )
+        
+        with col3:
+            if st.button("🎨 Save as SVG"):
+                svg_bytes = viz_fig.to_image(format="svg")
+                st.download_button(
+                    "Download SVG",
+                    data=svg_bytes,
+                    file_name=f"query_visualization_{datetime.now().strftime('%Y%m%d_%H%M%S')}.svg",
+                    mime="image/svg+xml"
+                )
     else:
-        st.info("👆 Generate queries with mind map option enabled.")
+        st.info("👆 Generate queries with visualization option enabled to see the hierarchical view.")
 
 with tabs[4]:  # History Tab
     st.markdown("### 📚 Query Generation History")
