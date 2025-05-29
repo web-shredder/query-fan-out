@@ -991,7 +991,18 @@ with tabs[0]:  # Generate Tab
                 st.warning("⚠️ Please enter a query.")
             else:
                 # Generate queries
-                results = generate_queries(user_query, mode, selected_provider, selected_model)
+                 results = generate_queries(
+                        user_query, 
+                        api_key, 
+                        model, 
+                        temperature, 
+                        max_tokens, 
+                        num_queries,
+                        search_mode,
+                        selected_types if filter_types else None,
+                        provider,
+                        personalization_data  # Add this parameter
+                    )
                 
                 if results:
                     st.session_state.last_results = results
@@ -1005,6 +1016,11 @@ with tabs[0]:  # Generate Tab
                     })
                     
                     st.success(f"✅ Generated {len(results)} queries!")
+                    # Show personalization indicator
+                    if personalization_data:
+                        with st.expander("Applied Personalization Context"):
+                            for key, value in personalization_data.items():
+                                st.write(f"**{key.title()}**: {value}")
                     st.balloons()
 
 with tabs[1]:  # Results Tab
