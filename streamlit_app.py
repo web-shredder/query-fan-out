@@ -33,8 +33,8 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🚀 Qforia Pro: Advanced AI Query Intelligence System")
-st.markdown("*Powered by Multi-Model Query Generation & Contextual Understanding*")
+st.title("Qforia 2.0: Advanced LLM Query Intelligence System")
+st.markdown("*Powered by Multi-Model Query Generation & Contextual Understanding*. Based on "Qforia by Mike King.")
 
 # Initialize session state
 if 'query_history' not in st.session_state:
