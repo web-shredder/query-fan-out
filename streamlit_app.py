@@ -1223,7 +1223,7 @@ with tabs[5]:  # Resources Tab
     # Quick Start Guide
     with st.expander("🚀 Quick Start Guide", expanded=True):
         st.markdown("""
-        ### Getting Started with HeLLiuM
+        ### Getting Started with heLLiuM
         
         **1. Set Up Your API Key**
         - Choose your AI provider (Gemini, OpenAI, or Claude)
@@ -1260,7 +1260,7 @@ with tabs[5]:  # Resources Tab
         st.markdown("""
         ### The Google Patent Explained
         
-        HeLLiuM is inspired by Google's "Search with Stateful Chat" patent, which describes how modern search engines generate multiple query variations to better understand user intent.
+        heLLiuM is inspired by Google's "Search with Stateful Chat" patent, which describes how modern search engines generate multiple query variations to better understand user intent.
         
         **Key Concepts:**
         
@@ -1288,7 +1288,7 @@ with tabs[5]:  # Resources Tab
         - "cost of owning electric SUV"
         - And dozens more...
         
-        HeLLiuM gives you access to that same powerful capability!
+        heLLiuM gives you access to that same powerful capability!
         """)
     
     # Advanced Features
@@ -1330,10 +1330,10 @@ with tabs[5]:  # Resources Tab
     # Credits and Attribution
     with st.expander("👥 Credits & Attribution", expanded=True):
         st.markdown("""
-        ### 🏆 HeLLiuM Team
+        ### 🏆 heLLiuM Team
         
         #### 🚀 **Version 3.0 Developer**
-        **Tyler Einberger** - Enhanced and expanded Qforia into HeLLiuM with advanced features
+        **Tyler Einberger** - Enhanced and expanded Qforia into heLLiuM with advanced features
         
         Connect with Tyler:
         - 💼 [LinkedIn](https://www.linkedin.com/in/tyler-einberger)
@@ -1350,7 +1350,7 @@ with tabs[5]:  # Resources Tab
         ---
         
         ### 📜 Version History
-        - **v3.0** (Current - HeLLiuM): Multi-provider support, visualizations, content analysis, PDF reports
+        - **v3.0** (Current - heLLiuM): Multi-provider support, visualizations, content analysis, PDF reports
         - **v2.0**: Enhanced UI, confidence scoring, session history
         - **v1.0**: Original by Mike King - Core query generation concept
         """)
@@ -1396,7 +1396,7 @@ with tabs[5]:  # Resources Tab
     # Use Cases
     with st.expander("💡 Use Cases & Examples"):
         st.markdown("""
-        ### How Different Teams Use Qforia Pro
+        ### How Different Teams Use heLLiuM
         
         **SEO Professionals**
         - Keyword research and expansion
@@ -1435,7 +1435,7 @@ with tabs[5]:  # Resources Tab
     st.markdown("---")
     st.markdown("""
     <div style='text-align: center; padding: 20px;'>
-        <h4>🔮 HeLLiuM - LLM Query Fan Out Simulator</h4>
+        <h4>🔮 heLLiuM - LLM Query Fan Out Simulator</h4>
         <p>Built with ❤️ by Tyler Einberger, based on original work by Mike King</p>
         <p>Powered by Google Gemini, OpenAI, and Anthropic Claude</p>
         <br>
@@ -1447,7 +1447,7 @@ with tabs[5]:  # Resources Tab
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: #666;'>
-    <p>HeLLiuM v3.0 | LLM Query Fan Out Simulator</p>
+    <p>heLLiuM v3.0 | LLM Query Fan Out Simulator</p>
     <p>Created by <a href='https://www.linkedin.com/in/tyler-einberger' target='_blank'>Tyler Einberger</a> | 
     Based on <a href='https://qforia.streamlit.app/' target='_blank'>original</a> by Mike King</p>
 </div>
