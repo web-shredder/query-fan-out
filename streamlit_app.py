@@ -56,14 +56,13 @@ with st.sidebar.expander("🔑 API Configuration", expanded=True):
     # Model Selection
     model_options = [
         "gemini-1.5-flash-latest",
-        "gemini-1.5-pro-latest",
-        "gemini-2.0-flash-exp"
+        "gemini-1.5-pro-latest"
     ]
     selected_model = st.selectbox("Select Model", model_options, index=0)
     
     # Advanced Settings
-    temperature = st.slider("Temperature", 0.0, 2.0, 0.8, 0.1)
-    max_tokens = st.number_input("Max Tokens", 100, 8000, 4000)
+    temperature = st.slider("Temperature", 0.0, 1.0, 0.7, 0.1)
+    max_tokens = st.number_input("Max Tokens", 100, 4000, 2000)
 
 # Query Configuration
 with st.sidebar.expander("🎯 Query Settings", expanded=True):
@@ -190,11 +189,11 @@ def ENHANCED_QUERY_FANOUT_PROMPT(q, mode, context=None):
     """Enhanced prompt based on Google's patent methodology"""
     
     mode_configs = {
-        "AI Overview (Simple)": {"min": 15, "max": 25, "depth": "basic"},
-        "AI Mode (Complex)": {"min": 30, "max": 50, "depth": "comprehensive"},
-        "Research Mode (Deep)": {"min": 50, "max": 80, "depth": "exhaustive"},
-        "Comparative Analysis": {"min": 25, "max": 40, "depth": "comparative"},
-        "Multi-Perspective": {"min": 40, "max": 60, "depth": "multi-angle"}
+        "AI Overview (Simple)": {"min": 12, "max": 20, "depth": "basic"},
+        "AI Mode (Complex)": {"min": 20, "max": 35, "depth": "comprehensive"},
+        "Research Mode (Deep)": {"min": 35, "max": 50, "depth": "exhaustive"},
+        "Comparative Analysis": {"min": 15, "max": 25, "depth": "comparative"},
+        "Multi-Perspective": {"min": 25, "max": 40, "depth": "multi-angle"}
     }
     
     config = mode_configs.get(mode, mode_configs["AI Mode (Complex)"])
@@ -203,91 +202,48 @@ def ENHANCED_QUERY_FANOUT_PROMPT(q, mode, context=None):
     if context:
         context_str = f"\nUser Context: {json.dumps(context)}\n"
     
-    return f"""You are an advanced AI search query generation system implementing Google's stateful chat methodology.
+    return f"""You are an advanced AI search query generation system. Generate diverse search queries based on the input.
 
 Original Query: "{q}"
 Mode: {mode}
-Target Complexity: {config['depth']}
 {context_str}
 
-CRITICAL REQUIREMENTS:
-1. Generate between {config['min']} and {config['max']} queries
-2. Each query must be unique and add value
-3. Include ALL query types from the taxonomy below
-4. Queries should progressively build understanding
-5. Consider temporal, geographic, and user intent factors
+Generate between {config['min']} and {config['max']} queries using these types:
+1. Reformulations - Alternative phrasings
+2. Related Queries - Adjacent topics
+3. Implicit Queries - Hidden questions
+4. Comparative Queries - Comparisons
+5. Entity Expansions - Entity focus
+6. Personalized Queries - Context-aware
 
-QUERY TAXONOMY (all types MUST be represented):
-1. Reformulations - Alternative phrasings maintaining intent
-2. Related Queries - Exploring adjacent topics
-3. Implicit Queries - Uncovering hidden questions
-4. Comparative Queries - Comparison-based explorations
-5. Entity Expansions - Deep dives on mentioned entities
-6. Personalized Queries - Context-aware variations
-7. Temporal Queries - Time-based considerations
-8. Location Queries - Geographic relevance
-9. Technical Deep-Dives - Specifications and technical details
-10. Intent Clarifications - Understanding true user needs
-
-For the query "{q}", consider:
-- What comparison is the user making?
-- What entities need expansion?
-- What temporal factors matter?
-- What location-specific factors apply?
-- What technical specifications are relevant?
-- What might the user's ultimate goal be?
-
-Return a JSON object with this EXACT structure:
+Return ONLY a valid JSON object with this structure:
 {{
-  "generation_metadata": {{
-    "timestamp": "ISO timestamp",
-    "model": "model name",
-    "temperature": {temperature},
-    "original_query_analysis": {{
-      "entities": ["list of key entities"],
-      "intent": "primary user intent",
-      "complexity": "low/medium/high",
-      "domain": "query domain"
-    }},
-    "generation_strategy": {{
-      "total_queries": integer,
-      "distribution": {{
-        "reformulation": integer,
-        "related": integer,
-        "implicit": integer,
-        "comparative": integer,
-        "entity_expansion": integer,
-        "personalized": integer,
-        "temporal": integer,
-        "location": integer,
-        "technical": integer,
-        "user_intent": integer
-      }},
-      "reasoning": "detailed explanation"
-    }}
-  }},
   "expanded_queries": [
     {{
-      "id": "unique_id",
-      "query": "the generated query",
-      "type": "query type from taxonomy",
-      "user_intent": "specific intent addressed",
-      "reasoning": "why this query adds value",
-      "confidence": 0.0-1.0,
-      "priority": "high/medium/low",
-      "entities": ["relevant entities"],
-      "temporal_relevance": "if applicable",
-      "geographic_relevance": "if applicable"
-    }}
-  ],
-  "query_relationships": [
-    {{
-      "parent_id": "query_id",
-      "child_id": "query_id",
-      "relationship": "follows_from/contrasts_with/expands_on"
+      "query": "generated query text",
+      "type": "reformulation|related|implicit|comparative|entity_expansion|personalized",
+      "user_intent": "what the user wants to know",
+      "reasoning": "why this query is useful",
+      "priority": "high|medium|low"
     }}
   ]
-}}"""
+}}
+
+Important: Return ONLY the JSON object, no other text."""
+
+def clean_json_response(text):
+    """Clean and extract JSON from response"""
+    # Remove any markdown code blocks
+    text = re.sub(r'```json\s*', '', text)
+    text = re.sub(r'```\s*$', '', text)
+    text = re.sub(r'```', '', text)
+    
+    # Find JSON object
+    json_match = re.search(r'\{[\s\S]*\}', text)
+    if json_match:
+        return json_match.group(0)
+    
+    return text.strip()
 
 def generate_enhanced_fanout(query, mode, context=None):
     """Generate queries using enhanced methodology"""
@@ -303,59 +259,154 @@ def generate_enhanced_fanout(query, mode, context=None):
                 }
             )
             
-            json_text = response.text.strip()
+            # Clean the response
+            json_text = clean_json_response(response.text)
             
-            # Clean response
-            if json_text.startswith("```json"):
-                json_text = json_text[7:]
-            if json_text.endswith("```"):
-                json_text = json_text[:-3]
+            # Debug output
+            with st.expander("🔍 Debug: Raw Response", expanded=False):
+                st.code(response.text[:500] + "..." if len(response.text) > 500 else response.text)
+                st.code(json_text[:500] + "..." if len(json_text) > 500 else json_text)
             
-            data = json.loads(json_text.strip())
+            # Parse JSON
+            try:
+                data = json.loads(json_text)
+            except json.JSONDecodeError as e:
+                st.error(f"JSON Parse Error: {str(e)}")
+                st.text("Attempting to fix common issues...")
+                
+                # Try to fix common JSON issues
+                json_text = json_text.replace("'", '"')  # Replace single quotes
+                json_text = re.sub(r',\s*}', '}', json_text)  # Remove trailing commas
+                json_text = re.sub(r',\s*]', ']', json_text)
+                
+                try:
+                    data = json.loads(json_text)
+                except:
+                    # If still failing, create a simple response
+                    st.warning("Using fallback query generation...")
+                    return generate_fallback_queries(query, mode)
             
-            # Store metadata
-            st.session_state.last_generation_metadata = data.get("generation_metadata", {})
-            st.session_state.query_relationships = data.get("query_relationships", [])
-            
-            # Calculate confidence scores if not provided
+            # Extract queries
             queries = data.get("expanded_queries", [])
+            
+            # Add IDs and confidence scores
             for q in queries:
-                if "confidence" not in q:
-                    q["confidence"] = calculate_confidence_score(
-                        q["query"], query, q["type"]
-                    )
-                if "id" not in q:
-                    q["id"] = generate_query_id(q["query"])
+                q["id"] = generate_query_id(q.get("query", ""))
+                q["confidence"] = calculate_confidence_score(
+                    q.get("query", ""), 
+                    query, 
+                    q.get("type", "related")
+                )
             
             return queries
             
     except Exception as e:
         st.error(f"🔴 Error: {str(e)}")
-        return None
+        st.warning("Using fallback query generation...")
+        return generate_fallback_queries(query, mode)
+
+def generate_fallback_queries(query, mode):
+    """Fallback query generation when API fails"""
+    base_queries = []
+    
+    # Simple transformations
+    words = query.lower().split()
+    
+    # Type 1: Reformulations
+    base_queries.append({
+        "id": generate_query_id(f"how to {query}"),
+        "query": f"how to {query}",
+        "type": "reformulation",
+        "user_intent": "Understanding the process",
+        "reasoning": "User might want step-by-step guidance",
+        "priority": "high",
+        "confidence": 0.8
+    })
+    
+    base_queries.append({
+        "id": generate_query_id(f"best {query}"),
+        "query": f"best {query}",
+        "type": "reformulation",
+        "user_intent": "Finding optimal options",
+        "reasoning": "User wants recommendations",
+        "priority": "high",
+        "confidence": 0.85
+    })
+    
+    # Type 2: Related
+    base_queries.append({
+        "id": generate_query_id(f"{query} reviews"),
+        "query": f"{query} reviews",
+        "type": "related",
+        "user_intent": "Reading user experiences",
+        "reasoning": "Reviews provide real-world insights",
+        "priority": "medium",
+        "confidence": 0.75
+    })
+    
+    base_queries.append({
+        "id": generate_query_id(f"{query} comparison"),
+        "query": f"{query} comparison",
+        "type": "comparative",
+        "user_intent": "Comparing options",
+        "reasoning": "User wants to evaluate alternatives",
+        "priority": "high",
+        "confidence": 0.8
+    })
+    
+    # Type 3: Implicit
+    base_queries.append({
+        "id": generate_query_id(f"{query} cost"),
+        "query": f"{query} cost",
+        "type": "implicit",
+        "user_intent": "Understanding pricing",
+        "reasoning": "Cost is often an implicit concern",
+        "priority": "medium",
+        "confidence": 0.7
+    })
+    
+    # Add more based on mode
+    if mode in ["AI Mode (Complex)", "Research Mode (Deep)"]:
+        base_queries.extend([
+            {
+                "id": generate_query_id(f"{query} alternatives"),
+                "query": f"{query} alternatives",
+                "type": "comparative",
+                "user_intent": "Finding alternatives",
+                "reasoning": "User might want other options",
+                "priority": "medium",
+                "confidence": 0.75
+            },
+            {
+                "id": generate_query_id(f"{query} guide 2024"),
+                "query": f"{query} guide 2024",
+                "type": "temporal",
+                "user_intent": "Current information",
+                "reasoning": "User wants up-to-date information",
+                "priority": "high",
+                "confidence": 0.8
+            }
+        ])
+    
+    return base_queries
 
 def display_generation_metadata():
     """Display generation metadata in an attractive format"""
-    if hasattr(st.session_state, 'last_generation_metadata'):
-        meta = st.session_state.last_generation_metadata
+    if hasattr(st.session_state, 'last_results'):
+        results = st.session_state.last_results
         
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            st.metric("Total Queries", 
-                     len(st.session_state.get('last_results', [])),
-                     delta=None)
+            st.metric("Total Queries", len(results))
         
         with col2:
-            strategy = meta.get('generation_strategy', {})
-            st.metric("Query Types", 
-                     len(strategy.get('distribution', {})),
-                     delta=None)
+            unique_types = len(set(q.get('type', 'unknown') for q in results))
+            st.metric("Query Types", unique_types)
         
         with col3:
-            analysis = meta.get('original_query_analysis', {})
-            st.metric("Query Complexity", 
-                     analysis.get('complexity', 'N/A').upper(),
-                     delta=None)
+            avg_confidence = sum(q.get('confidence', 0) for q in results) / len(results) if results else 0
+            st.metric("Avg Confidence", f"{avg_confidence:.0%}")
 
 def display_query_distribution():
     """Display query type distribution"""
@@ -380,7 +431,7 @@ def display_query_distribution():
             st.bar_chart(df.set_index('Type')['Count'])
 
 # Main UI
-tabs = st.tabs(["🚀 Generate", "📊 Results", "🔍 Analysis", "📚 History", "⚙️ Advanced"])
+tabs = st.tabs(["🚀 Generate", "📊 Results", "🔍 Analysis", "📚 History"])
 
 with tabs[0]:  # Generate Tab
     col1, col2 = st.columns([3, 1])
@@ -400,8 +451,6 @@ with tabs[0]:  # Generate Tab
                                              value="$$$"),
                     "timeframe": st.selectbox("Timeframe", 
                                             ["Immediate", "3 months", "6 months", "1 year"]),
-                    "previous_searches": st.text_area("Previous Related Searches", 
-                                                    placeholder="Enter previous searches...")
                 }
         else:
             context = None
@@ -436,8 +485,7 @@ with tabs[0]:  # Generate Tab
                             "original_query": user_query,
                             "mode": mode,
                             "context": context,
-                            "results": results,
-                            "metadata": st.session_state.last_generation_metadata
+                            "results": results
                         })
                     
                     st.success(f"✅ Generated {len(results)} intelligent queries!")
@@ -501,7 +549,7 @@ with tabs[1]:  # Results Tab
                         # Checkbox for selection
                         selected = st.checkbox(
                             q['query'],
-                            key=f"query_{q.get('id', idx)}",
+                            key=f"query_{q.get('id', idx)}_{idx}",
                             value=q.get('id') in st.session_state.selected_queries
                         )
                         
@@ -514,15 +562,6 @@ with tabs[1]:  # Results Tab
                         with st.container():
                             st.caption(f"💡 **Intent:** {q.get('user_intent', 'N/A')}")
                             st.caption(f"📝 **Reasoning:** {q.get('reasoning', 'N/A')}")
-                            
-                            # Additional metadata
-                            metadata_cols = st.columns(4)
-                            if q.get('entities'):
-                                metadata_cols[0].caption(f"🏷️ Entities: {', '.join(q['entities'][:3])}")
-                            if q.get('temporal_relevance'):
-                                metadata_cols[1].caption(f"⏰ {q['temporal_relevance']}")
-                            if q.get('geographic_relevance'):
-                                metadata_cols[2].caption(f"📍 {q['geographic_relevance']}")
                     
                     with col2:
                         # Priority badge
@@ -535,36 +574,20 @@ with tabs[1]:  # Results Tab
                         confidence = q.get('confidence', 0)
                         st.metric("Confidence", f"{confidence:.0%}", label_visibility="collapsed")
         
-        # Action buttons
+        # Export buttons
         st.markdown("---")
-        col1, col2, col3 = st.columns(3)
+        col1, col2 = st.columns(2)
         
         with col1:
-            if st.button("📥 Export Selected", disabled=len(st.session_state.selected_queries) == 0):
-                selected_data = [q for q in st.session_state.last_results 
-                               if q.get('id') in st.session_state.selected_queries]
-                csv = pd.DataFrame(selected_data).to_csv(index=False)
-                st.download_button(
-                    "Download Selected Queries",
-                    data=csv.encode('utf-8'),
-                    file_name=f"selected_queries_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                    mime="text/csv"
-                )
-        
-        with col2:
-            if st.button("📊 Export All"):
+            if st.button("📊 Export All Results"):
                 df = pd.DataFrame(st.session_state.last_results)
                 csv = df.to_csv(index=False)
                 st.download_button(
-                    "Download All Queries",
+                    "Download CSV",
                     data=csv.encode('utf-8'),
-                    file_name=f"all_queries_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    file_name=f"qforia_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                     mime="text/csv"
                 )
-        
-        with col3:
-            if st.button("🔄 Regenerate"):
-                st.experimental_rerun()
     
     else:
         st.info("👆 Generate queries first to see results here.")
@@ -580,28 +603,24 @@ with tabs[2]:  # Analysis Tab
         # Confidence distribution
         st.markdown("#### Confidence Score Distribution")
         confidence_scores = [q.get('confidence', 0) for q in st.session_state.last_results]
-        df_confidence = pd.DataFrame({
-            'Confidence': confidence_scores,
-            'Count': [1] * len(confidence_scores)
-        })
-        st.bar_chart(df_confidence.groupby(pd.cut(df_confidence['Confidence'], 
-                                                  bins=[0, 0.5, 0.7, 0.85, 1.0],
-                                                  labels=['Low', 'Medium', 'High', 'Very High'])).count())
         
-        # Entity analysis
-        st.markdown("#### Entity Coverage")
-        all_entities = []
+        # Create bins for confidence scores
+        bins = [0, 0.5, 0.7, 0.85, 1.0]
+        labels = ['Low (0-50%)', 'Medium (50-70%)', 'High (70-85%)', 'Very High (85-100%)']
+        
+        # Count queries in each bin
+        confidence_dist = pd.cut(confidence_scores, bins=bins, labels=labels).value_counts()
+        st.bar_chart(confidence_dist)
+        
+        # Priority distribution
+        st.markdown("#### Priority Distribution")
+        priority_counts = {}
         for q in st.session_state.last_results:
-            all_entities.extend(q.get('entities', []))
+            priority = q.get('priority', 'medium')
+            priority_counts[priority] = priority_counts.get(priority, 0) + 1
         
-        entity_counts = pd.Series(all_entities).value_counts().head(10)
-        if not entity_counts.empty:
-            st.bar_chart(entity_counts)
-        
-        # Query relationships
-        if hasattr(st.session_state, 'query_relationships') and st.session_state.query_relationships:
-            st.markdown("#### Query Relationships")
-            st.json(st.session_state.query_relationships)
+        priority_df = pd.DataFrame.from_dict(priority_counts, orient='index', columns=['Count'])
+        st.bar_chart(priority_df)
     
     else:
         st.info("👆 Generate queries first to see analysis here.")
@@ -613,147 +632,55 @@ with tabs[3]:  # History Tab
         # Session selector
         session_options = [
             f"{s['timestamp']} - {s['original_query'][:50]}... ({len(s['results'])} queries)"
-            for s in st.session_state.generation_sessions
+            for s in reversed(st.session_state.generation_sessions)
         ]
         
-        selected_session_idx = st.selectbox(
-            "Select a session to review",
-            range(len(session_options)),
-            format_func=lambda x: session_options[x]
-        )
-        
-        if selected_session_idx is not None:
-            session = st.session_state.generation_sessions[selected_session_idx]
+        if session_options:
+            selected_session_idx = st.selectbox(
+                "Select a session to review",
+                range(len(session_options)),
+                format_func=lambda x: session_options[x]
+            )
             
-            # Display session details
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown(f"**Original Query:** {session['original_query']}")
-                st.markdown(f"**Mode:** {session['mode']}")
-                st.markdown(f"**Timestamp:** {session['timestamp']}")
-            
-            with col2:
-                st.markdown(f"**Total Queries:** {len(session['results'])}")
-                if session.get('context'):
-                    st.markdown("**Context:** ✅ Included")
-                else:
-                    st.markdown("**Context:** ❌ Not included")
-            
-            # Load session button
-            if st.button("📂 Load This Session"):
-                st.session_state.last_results = session['results']
-                st.session_state.last_generation_metadata = session.get('metadata', {})
-                st.success("✅ Session loaded! Go to Results tab.")
-            
-            # Display session queries
-            with st.expander("View Queries from This Session"):
-                df = pd.DataFrame(session['results'])
-                st.dataframe(df[['query', 'type', 'priority', 'confidence']], 
-                           use_container_width=True)
+            if selected_session_idx is not None:
+                # Get session (accounting for reversal)
+                actual_idx = len(st.session_state.generation_sessions) - 1 - selected_session_idx
+                session = st.session_state.generation_sessions[actual_idx]
+                
+                # Display session details
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.markdown(f"**Original Query:** {session['original_query']}")
+                    st.markdown(f"**Mode:** {session['mode']}")
+                    st.markdown(f"**Timestamp:** {session['timestamp']}")
+                
+                with col2:
+                    st.markdown(f"**Total Queries:** {len(session['results'])}")
+                    if session.get('context'):
+                        st.markdown("**Context:** ✅ Included")
+                    else:
+                        st.markdown("**Context:** ❌ Not included")
+                
+                # Load session button
+                if st.button("📂 Load This Session"):
+                    st.session_state.last_results = session['results']
+                    st.success("✅ Session loaded! Go to Results tab.")
+                
+                # Display session queries
+                with st.expander("View Queries from This Session"):
+                    df = pd.DataFrame(session['results'])
+                    if not df.empty:
+                        display_cols = ['query', 'type', 'priority']
+                        if 'confidence' in df.columns:
+                            display_cols.append('confidence')
+                        st.dataframe(df[display_cols], use_container_width=True)
     else:
         st.info("No generation history yet. Start generating queries!")
-
-with tabs[4]:  # Advanced Tab
-    st.markdown("### ⚙️ Advanced Features")
-    
-    # Query Chaining
-    st.markdown("#### 🔗 Query Chaining")
-    st.info("Select queries from your results to generate follow-up queries based on them.")
-    
-    if st.session_state.selected_queries and hasattr(st.session_state, 'last_results'):
-        selected_for_chaining = [q for q in st.session_state.last_results 
-                               if q.get('id') in st.session_state.selected_queries]
-        
-        st.markdown(f"**{len(selected_for_chaining)} queries selected for chaining**")
-        
-        chain_mode = st.selectbox(
-            "Chaining Strategy",
-            ["Deep Dive", "Lateral Exploration", "Contrast & Compare", "Synthesis"]
-        )
-        
-        if st.button("🔗 Generate Chained Queries"):
-            # Implement query chaining logic
-            st.info("Query chaining feature coming soon!")
-    
-    # Batch Processing
-    st.markdown("#### 📦 Batch Query Processing")
-    uploaded_file = st.file_uploader(
-        "Upload CSV with queries",
-        type=['csv'],
-        help="CSV should have a 'query' column"
-    )
-    
-    if uploaded_file:
-        df = pd.read_csv(uploaded_file)
-        st.markdown(f"Found {len(df)} queries to process")
-        
-        if st.button("🚀 Process Batch"):
-            progress_bar = st.progress(0)
-            results_container = st.container()
-            
-            batch_results = []
-            for idx, row in df.iterrows():
-                if 'query' in row:
-                    # Process each query
-                    results = generate_enhanced_fanout(row['query'], mode)
-                    if results:
-                        batch_results.extend(results)
-                    
-                    progress_bar.progress((idx + 1) / len(df))
-            
-            results_container.success(f"✅ Generated {len(batch_results)} total queries from {len(df)} inputs")
-            
-            # Export batch results
-            batch_df = pd.DataFrame(batch_results)
-            csv = batch_df.to_csv(index=False)
-            st.download_button(
-                "📥 Download Batch Results",
-                data=csv.encode('utf-8'),
-                file_name=f"batch_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                mime="text/csv"
-            )
-    
-    # API Integration Guide
-    st.markdown("#### 🔌 API Integration")
-    with st.expander("View API Integration Code"):
-        st.code("""
-# Example: Integrate Qforia Pro into your application
-
-import requests
-import json
-
-def generate_queries(primary_query, api_key, mode="AI Mode (Complex)"):
-    endpoint = "https://your-qforia-instance.com/api/generate"
-    
-    payload = {
-        "query": primary_query,
-        "mode": mode,
-        "api_key": api_key,
-        "options": {
-            "include_confidence": True,
-            "include_relationships": True,
-            "min_confidence": 0.7
-        }
-    }
-    
-    response = requests.post(endpoint, json=payload)
-    return response.json()
-
-# Usage
-results = generate_queries(
-    "best practices for machine learning in production",
-    "your-api-key"
-)
-
-for query in results['queries']:
-    print(f"{query['confidence']:.0%} - {query['query']}")
-""", language="python")
 
 # Footer
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: #666;'>
     <p>Qforia Pro v2.0 | Powered by Advanced Query Intelligence</p>
-    <p>Based on state-of-the-art search methodologies</p>
 </div>
 """, unsafe_allow_html=True)
